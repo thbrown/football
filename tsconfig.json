@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "outDir": "./docs/",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "module": "Node16",
+    "target": "es5",
+    "jsx": "react",
+    "allowJs": true,
+    "moduleResolution": "node16",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true
+  }
+}
