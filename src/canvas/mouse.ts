@@ -59,6 +59,9 @@ export class Mouse extends Actor {
       if (this.coordinator != null) {
         this.coordinator.setPoint(worldCoords);
       }
+      if (this.draggedActor instanceof Player) {
+        this.draggedActor.setTargetPath(this.coordinator);
+      }
     });
 
     canvas.addEventListener("mousedown", (event) => {
