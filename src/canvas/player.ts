@@ -12,9 +12,7 @@ import { Mouse } from "./mouse";
 import CoordinateRecorder from "./coordinate-recordet";
 import { Clock } from "./clock";
 import { Kinematics } from "../utils/kinematics";
-
-const MAX_SPEED = 1; // FPS 12 mph
-const ACCELERATION = 4.10105; // Ft/s 1.25 m/s
+import { PLAYER_ACCELERATION, PLAYER_MAX_SPEED } from "../utils/constants";
 
 export class Player extends Actor {
   private radius: number;
@@ -105,9 +103,12 @@ export class Player extends Actor {
 
     // Move toward the target path
     if (this.targetPath != null && this.clock.getTimeElapsed() > 0) {
+      const targetPosition = this.targetPath.getCoordAtTime(
+        this.clock.getTimeElapsed()
+      );
       const newLinearVelocity = this.calcLinearVelocity(
         this.rigidBody.translation(),
-        this.targetPath.getCoordAtTime(this.clock.getTimeElapsed()),
+        targetPosition ?? this.rigidBody.translation(),
         this.rigidBody.linvel()
       );
       console.log("Set linear velocity to", newLinearVelocity);
@@ -128,29 +129,42 @@ export class Player extends Actor {
     const xDistToCoord = currentPosition.x - targetPosition.x;
     const yDistToCoord = currentPosition.y - targetPosition.y;
 
-    // We need to move more slowly if we are close to the target, otherwise we will overshoot
-    let xVelocity = Kinematics.getInitialVelocity(
-      0,
-      -ACCELERATION,
-      Math.abs(xDistToCoord)
-    );
-    let yVelocity = Kinematics.getInitialVelocity(
-      0,
-      -ACCELERATION,
-      Math.abs(yDistToCoord)
-    );
+    // Run as fast as possible to the target
+    const xVelocity1 =
+      Kinematics.getFinalVelocity(
+        currentVelocity.x,
+        PLAYER_ACCELERATION,
+        Math.abs(xDistToCoord)
+      ) * (xDistToCoord < 0 ? 1 : -1);
+    const yVelocity1 =
+      Kinematics.getFinalVelocity(
+        currentVelocity.y,
+        PLAYER_ACCELERATION,
+        Math.abs(yDistToCoord)
+      ) * (yDistToCoord < 0 ? 1 : -1);
 
-    xVelocity = xDistToCoord < 0 ? xVelocity : -xVelocity;
-    yVelocity = yDistToCoord < 0 ? yVelocity : -yVelocity;
+    // We need to move more slowly if we are close to the target, otherwise we will overshoot
+    const xVelocity2 =
+      Kinematics.getInitialVelocity(
+        0,
+        -PLAYER_ACCELERATION,
+        Math.abs(xDistToCoord)
+      ) * (xDistToCoord < 0 ? 1 : -1);
+    const yVelocity2 =
+      Kinematics.getInitialVelocity(
+        0,
+        -PLAYER_ACCELERATION,
+        Math.abs(yDistToCoord)
+      ) * (yDistToCoord < 0 ? 1 : -1);
 
     // Choose the slower of the two velocities
-    //let xVelocity = Math.min(xVelocity1, xVelocity2);
-    //let yVelocity = Math.min(yVelocity1, yVelocity2);
+    let xVelocity = Math.min(xVelocity1, xVelocity2);
+    let yVelocity = Math.min(yVelocity1, yVelocity2);
 
     // Limit to max speed
     const speed = Math.sqrt(xVelocity * xVelocity + yVelocity * yVelocity);
-    if (speed > MAX_SPEED) {
-      const ratio = MAX_SPEED / speed;
+    if (speed > PLAYER_MAX_SPEED) {
+      const ratio = PLAYER_MAX_SPEED / speed;
       xVelocity *= ratio;
       yVelocity *= ratio;
     }

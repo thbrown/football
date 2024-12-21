@@ -2,8 +2,11 @@ import { Collider, EventQueue, RigidBody, World } from "@dimforge/rapier2d";
 import { Camera } from "./camera";
 import { ActorCommon, ActorRegistry, Rapier } from "../utils/types";
 import { Actor } from "./actor";
-
-const TICK_WIDTH = 2;
+import {
+  FIELD_MAJOR_LINE_SPACING,
+  FIELD_MINOR_LINE_SPACING,
+  FIELD_TICK_WIDTH,
+} from "../utils/constants";
 
 export class Field extends Actor {
   private x: number;
@@ -54,7 +57,11 @@ export class Field extends Actor {
     // Draw 10 yard lines
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
-    for (let i = -this.height / 2; i <= this.height / 2; i += 10) {
+    for (
+      let i = -this.height / 2;
+      i <= this.height / 2;
+      i += FIELD_MAJOR_LINE_SPACING
+    ) {
       const screenLineStartCoord = camera.toScreenCoord(
         this.x - this.width / 2,
         this.y + i
@@ -73,13 +80,17 @@ export class Field extends Actor {
     // Draw left tick marks
     ctx.fillStyle = "white";
     ctx.lineWidth = 1;
-    for (let i = -this.height / 2; i <= this.height / 2; i += 1) {
+    for (
+      let i = -this.height / 2;
+      i <= this.height / 2;
+      i += FIELD_MINOR_LINE_SPACING
+    ) {
       const screenLineStartCoord = camera.toScreenCoord(
         this.x - this.width / 2,
         this.y + i
       );
       const screenLineEndCoord = camera.toScreenCoord(
-        this.x - this.width / 2 + TICK_WIDTH,
+        this.x - this.width / 2 + FIELD_TICK_WIDTH,
         this.y + i
       );
       ctx.beginPath();
@@ -90,13 +101,17 @@ export class Field extends Actor {
     }
 
     // Draw right tick marks
-    for (let i = -this.height / 2; i <= this.height / 2; i += 1) {
+    for (
+      let i = -this.height / 2;
+      i <= this.height / 2;
+      i += FIELD_MINOR_LINE_SPACING
+    ) {
       const screenLineStartCoord = camera.toScreenCoord(
         this.x + this.width / 2,
         this.y + i
       );
       const screenLineEndCoord = camera.toScreenCoord(
-        this.x + this.width / 2 - TICK_WIDTH,
+        this.x + this.width / 2 - FIELD_TICK_WIDTH,
         this.y + i
       );
       ctx.beginPath();

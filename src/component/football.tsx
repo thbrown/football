@@ -7,6 +7,7 @@ import { ActorCommon, ActorRegistry, Rapier } from "../utils/types";
 import { Mouse } from "../canvas/mouse";
 import { Actor } from "../canvas/actor";
 import { Clock } from "../canvas/clock";
+import { FIELD_LENGTH, FIELD_WIDTH } from "../utils/constants";
 
 const camera = new Camera();
 
@@ -55,8 +56,8 @@ export const Football = () => {
         common,
         x: 0,
         y: 0,
-        width: 50,
-        height: 100,
+        width: FIELD_WIDTH,
+        height: FIELD_LENGTH,
       });
       const clock = new Clock({ common });
       const mouse = new Mouse({
