@@ -1,5 +1,14 @@
 import * as React from "react";
 import { useEffect, useRef } from "react";
+import { Camera } from "../canvas/camera";
+import { Player } from "../canvas/player";
+import { Field } from "../canvas/field";
+import { ActorCommon, ActorRegistry, Rapier } from "../utils/types";
+import { Mouse } from "../canvas/mouse";
+import { Actor } from "../canvas/actor";
+import { Clock } from "../canvas/clock";
+
+const camera = new Camera();
 
 export const Football = () => {
   const resizeCanvasToDisplaySize = (canvas: HTMLCanvasElement) => {
@@ -10,8 +19,10 @@ export const Football = () => {
       canvas.width !== displayWidth || canvas.height !== displayHeight;
 
     if (needResize) {
+      console.log("RESIZE");
       canvas.width = displayWidth;
       canvas.height = displayHeight;
+      camera.setCanvasDimensions(displayWidth, displayHeight);
     }
 
     return needResize;
@@ -20,54 +31,72 @@ export const Football = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    import("@dimforge/rapier2d").then((RAPIER: Rapier) => {
+      console.log("Loaded rapier2d", RAPIER);
+      const gravity = { x: 0.0, y: 0 };
+      const eventQueue = new RAPIER.EventQueue(true);
+      const world = new RAPIER.World(gravity);
+      const actorRegistry: ActorRegistry = new Map();
+      const common: ActorCommon = {
+        rapier: RAPIER,
+        world,
+        eventQueue,
+        actorRegistry,
+      };
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    resizeCanvasToDisplaySize(canvas);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    let ballX = 50;
-    let ballY = 50;
-    let ballSpeedX = 2;
-    let ballSpeedY = 2;
-    const ballRadius = 20;
+      //const player = new Player(RAPIER, world, 10, 0, 0.75);
+      const field = new Field({
+        common,
+        x: 0,
+        y: 0,
+        width: 50,
+        height: 100,
+      });
+      const clock = new Clock({ common });
+      const mouse = new Mouse({
+        common,
+        camera,
+        canvas: canvasRef.current,
+        radius: 0.25,
+        clock,
+        addActor: (actor: Actor) => {
+          actors.push(actor);
+        },
+      });
+
+      const actors: Array<Actor> = [field, clock, mouse];
+
+      const animate = () => {
+        for (let actor of actors) {
+          const handle = actor.getHandle();
+          const collider = world.getCollider(handle);
+          const collisionHandles: number[] = [];
+          world.intersectionPairsWith(collider, (otherHandle) => {
+            collisionHandles.push(otherHandle.handle);
+          });
+
+          actor.update(collisionHandles);
+          world.step(eventQueue);
+          actor.draw(ctx, camera);
+        }
+        requestAnimationFrame(animate);
+      };
+
+      animate();
+    });
 
     const handleResize = () => {
       if (canvasRef.current) {
         resizeCanvasToDisplaySize(canvasRef.current);
       }
     };
-
-    const drawBall = () => {
-      if (!ctx) return;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw the ball
-      ctx.beginPath();
-      ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-      ctx.fillStyle = "blue";
-      ctx.fill();
-      ctx.closePath();
-
-      // Move the ball
-      ballX += ballSpeedX;
-      ballY += ballSpeedY;
-
-      // Bounce the ball off the walls
-      if (ballX + ballRadius > canvas.width || ballX - ballRadius < 0) {
-        ballSpeedX *= -1;
-      }
-      if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) {
-        ballSpeedY *= -1;
-      }
-
-      requestAnimationFrame(drawBall);
-    };
-
-    drawBall();
+    handleResize();
 
     window.addEventListener("resize", handleResize);
     return () => {
@@ -80,7 +109,7 @@ export const Football = () => {
       <h1>Football</h1>
       <canvas
         ref={canvasRef}
-        style={{ width: "100%", height: "100%", border: "1px solid black" }}
+        style={{ width: "100%", height: "100%" }}
       ></canvas>
     </div>
   );

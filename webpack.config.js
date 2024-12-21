@@ -54,6 +54,9 @@ module.exports = {
       fs: false,
     },
   },
+  experiments: {
+    asyncWebAssembly: true, // Enable WebAssembly support
+  },
   module: {
     rules: [
       {
@@ -78,6 +81,10 @@ module.exports = {
       {
         test: /\.worker\.ts$/,
         use: { loader: "worker-loader" },
+      },
+      {
+        test: /\.wasm$/,
+        type: "webassembly/async",
       },
     ],
   },
