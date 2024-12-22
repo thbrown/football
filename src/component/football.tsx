@@ -8,6 +8,8 @@ import { Mouse } from "../canvas/mouse";
 import { Actor } from "../canvas/actor";
 import { Clock } from "../canvas/clock";
 import { FIELD_LENGTH, FIELD_WIDTH } from "../utils/constants";
+import { Track } from "./track";
+//import "../Routes.scss";
 
 const camera = new Camera();
 
@@ -112,6 +114,7 @@ export const Football = () => {
         ref={canvasRef}
         style={{ width: "100%", height: "100%" }}
       ></canvas>
+      <Track></Track>
     </div>
   );
 };

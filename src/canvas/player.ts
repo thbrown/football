@@ -13,6 +13,7 @@ import CoordinateRecorder from "./coordinate-recordet";
 import { Clock } from "./clock";
 import { Kinematics } from "../utils/kinematics";
 import { PLAYER_ACCELERATION, PLAYER_MAX_SPEED } from "../utils/constants";
+import { getDist } from "../utils/generic-utils";
 
 export class Player extends Actor {
   private radius: number;
@@ -24,7 +25,9 @@ export class Player extends Actor {
   private common: ActorCommon;
   private selected: boolean;
   private targetPath: CoordinateRecorder | null;
+  private travledPath: CoordinateRecorder | null;
   private clock: Clock;
+  private recordingMotion: boolean;
 
   constructor({
     common,
@@ -56,7 +59,11 @@ export class Player extends Actor {
     this.radius = radius;
     this.rigidBody = rigidBody;
     this.selected = true;
+    this.recordingMotion = false;
     this.clock = clock;
+    this.clock.setResetListener(() => {
+      this.travledPath = null;
+    });
   }
 
   setTargetPath(value: CoordinateRecorder): void {
@@ -64,20 +71,33 @@ export class Player extends Actor {
   }
 
   draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
-    // Get screen coords
-    const screenCoords = camera.toScreenCoord(this.x, this.y);
-    const screenScale = camera.getScaleFactor();
-    const screenRadius = this.radius * screenScale;
-
+    // Draw paths first (so the player circle appears on top of them)
     if (this.targetPath != null) {
       this.targetPath.drawPath(
         ctx,
         (coord: Coordinate) => {
           return camera.toScreenCoord(coord.x, coord.y);
         },
-        this.clock.getTimeElapsed()
+        "white",
+        this.clock.getTimeElapsed(),
       );
     }
+
+    if(this.travledPath != null) {
+      this.travledPath.drawPath(
+        ctx,
+        (coord: Coordinate) => {
+          return camera.toScreenCoord(coord.x, coord.y);
+        },
+        "yellow",
+        //this.clock.getTimeElapsed()
+      );
+    }
+
+    // Get screen coords
+    const screenCoords = camera.toScreenCoord(this.x, this.y);
+    const screenScale = camera.getScaleFactor();
+    const screenRadius = this.radius * screenScale;
 
     // Draw the ball
     ctx.beginPath();
@@ -88,31 +108,47 @@ export class Player extends Actor {
   }
 
   update(collisions: number[]): void {
-    let position = this.rigidBody.translation();
+    // Update draw location based on the physics engine
+    const position = this.rigidBody.translation();
     this.x = position.x;
     this.y = position.y;
 
+    // Check if the player is selected (colliding mouse pointer)
     this.selected = false;
     for (let collision of collisions) {
       const target = this.common.actorRegistry.get(collision);
-
       if (target instanceof Mouse) {
         this.selected = true;
       }
+    }
+
+    // Record path traveled (if clock is running)
+    if (this.targetPath != null && this.clock.getTimeElapsed() > 0) {
+      if (this.travledPath == null) {
+        this.travledPath = new CoordinateRecorder({ x: this.initialX, y: this.initialY });
+        this.travledPath.startRecording(this.targetPath.getStartTime());
+      }
+      this.travledPath.setPoint({ x: this.x, y: this.y });
     }
 
     // Move toward the target path
     if (this.targetPath != null && this.clock.getTimeElapsed() > 0) {
       const targetPosition = this.targetPath.getCoordAtTime(
         this.clock.getTimeElapsed()
-      );
+      ) ?? { x: this.initialX, y: this.initialY };
+
       const newLinearVelocity = this.calcLinearVelocity(
         this.rigidBody.translation(),
-        targetPosition ?? this.rigidBody.translation(),
+        targetPosition,
         this.rigidBody.linvel()
       );
-      console.log("Set linear velocity to", newLinearVelocity);
-      this.rigidBody.setLinvel(newLinearVelocity, true);
+
+      // Deadzone, so we don't get jiggling players at the end of the route
+      if(getDist(this.rigidBody.translation(), targetPosition) < 0.1) {
+        this.rigidBody.setLinvel({ x: 0, y: 0 }, true);
+      } else {
+        this.rigidBody.setLinvel(newLinearVelocity, true);
+      }
     } else {
       this.rigidBody.setTranslation(
         { x: this.initialX, y: this.initialY },

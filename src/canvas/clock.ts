@@ -3,11 +3,11 @@ import { Actor } from "./actor";
 import { ActorCommon } from "../utils/types";
 
 export class Clock extends Actor {
-  [x: string]: any;
   private timeElapsed: number; // Time in seconds
   private previousTimeElapsed: number;
   private isActive: boolean;
   private lastUpdateTime: number;
+  private onResetListeners: (() => void)[] = [];
 
   constructor({ common }: { common: ActorCommon }) {
     super(common);
@@ -27,7 +27,14 @@ export class Clock extends Actor {
 
   reset(): void {
     this.timeElapsed = 0;
+    for(const listener of this.onResetListeners) {
+      listener();
+    }
   }
+
+  setResetListener(listener: () => void): void {
+    this.onResetListeners.push(listener);
+  } 
 
   update(collisions: number[]): void {
     if (this.isActive) {

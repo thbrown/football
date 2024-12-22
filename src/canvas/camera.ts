@@ -1,3 +1,5 @@
+import { FIELD_WIDTH } from "../utils/constants";
+
 export class Camera {
   private canvasWidth: number;
   private canvasHeight: number;
@@ -12,7 +14,7 @@ export class Camera {
     canvasHeight: number = 600,
     offsetX: number = 0,
     offsetY: number = 0,
-    zoom: number = 100 // FEET ON WIDTH
+    zoom: number = FIELD_WIDTH // FEET ON WIDTH
   ) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;

@@ -12,6 +12,7 @@ import { Player } from "./player";
 import { Clock } from "./clock";
 import CoordinateRecorder from "./coordinate-recordet";
 import { throttle } from "lodash";
+import { PLAYER_RADIUS } from "../utils/constants";
 
 export class Mouse extends Actor {
   private radius: number;
@@ -76,11 +77,11 @@ export class Mouse extends Actor {
             clock,
             x: worldCoords.x,
             y: worldCoords.y,
-            radius: 0.75,
+            radius: PLAYER_RADIUS,
           })
         );
       } else {
-        this.coordinator = new CoordinateRecorder();
+        this.coordinator = new CoordinateRecorder({x: worldCoords.x, y: worldCoords.y});
         this.coordinator.startRecording();
         console.log("Selected actor", this.hoveredActor);
         this.draggedActor = this.hoveredActor;
@@ -121,7 +122,7 @@ export class Mouse extends Actor {
     if (this.coordinator != null) {
       this.coordinator.drawPath(ctx, (coord: Coordinate) => {
         return camera.toScreenCoord(coord.x, coord.y);
-      });
+      }, "red");
     }
   }
 

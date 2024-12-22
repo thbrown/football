@@ -5,12 +5,13 @@ class CoordinateRecorder {
   private startTime: number | null = null;
   private coordinates: Tree<number, Coordinate>;
 
-  constructor() {
+  constructor(initialCoordinate: Coordinate) {
     this.coordinates = createRBTree();
+    this.coordinates.insert(0, initialCoordinate);
   }
 
-  startRecording(): void {
-    this.startTime = performance.now();
+  startRecording(startTime? : number): void {
+    this.startTime = startTime ?? performance.now();
     this.coordinates = createRBTree(); // Reset the tree
   }
 
@@ -25,14 +26,19 @@ class CoordinateRecorder {
     //);
   }
 
+  getStartTime(): number | null {
+    return this.startTime;
+  }
+
   stopRecording(): void {
     this.startTime = null;
   }
 
   getCoordAtTime(t: number): Coordinate | null {
-    if (this.coordinates.length === 0) {
-      return null;
-    }
+    // Should not happen now that we supply an initial coord
+    //if (this.coordinates.length === 0) {
+    //  return null; 
+    //}
 
     const iterator = this.coordinates.le(t);
     if (iterator.value == null) {
@@ -45,7 +51,8 @@ class CoordinateRecorder {
   drawPath(
     ctx: CanvasRenderingContext2D,
     mapCoords: (coord: Coordinate) => Coordinate,
-    timestamp?: number
+    color: string,
+    timestamp?: number,
   ): void {
     if (this.coordinates.length === 0) {
       return;
@@ -56,7 +63,7 @@ class CoordinateRecorder {
     ctx.beginPath();
     let first = true;
 
-    ctx.strokeStyle = "yellow";
+    ctx.strokeStyle = color;
     ctx.lineWidth = 4;
 
     //console.log("Drawing up to", timestamp);

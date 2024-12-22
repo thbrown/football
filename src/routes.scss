@@ -12,3 +12,19 @@ canvas {
   display: block;
   border: 1px solid black;
 }
+
+.track-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 8px;
+}
+
+.track-button {
+  margin-left: 2px;
+}
+
+.track-slider {
+  margin-left: 20px;
+  margin-right: 10px;
+}
