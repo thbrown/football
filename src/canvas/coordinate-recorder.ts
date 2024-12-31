@@ -1,45 +1,37 @@
 import createRBTree, { Tree } from "functional-red-black-tree";
 import { Coordinate } from "../utils/types";
+import { Clock } from "../clock";
 
 class CoordinateRecorder {
-  private startTime: number | null = null;
+  private clock: Clock;
   private coordinates: Tree<number, Coordinate>;
 
   constructor(initialCoordinate: Coordinate) {
     this.coordinates = createRBTree();
-    this.coordinates.insert(0, initialCoordinate);
+    this.coordinates = this.coordinates.insert(0, initialCoordinate);
   }
 
-  startRecording(startTime? : number): void {
-    this.startTime = startTime ?? performance.now();
+  startRecording(clock : Clock): void {
+    this.clock = clock;
     this.coordinates = createRBTree(); // Reset the tree
   }
 
-  setPoint(coord: Coordinate): void {
-    if (this.startTime === null) {
-      throw new Error("Recording has not started. Call startRecording first.");
-    }
-    const timestamp = performance.now() - this.startTime;
-    this.coordinates = this.coordinates.insert(timestamp, coord);
-    //console.log(
-    //  `Recording point at ${timestamp} ms: (${coord.x}, ${coord.y}) ${this.coordinates.length}`
-    //);
+  isRecording(): boolean {
+    return this.clock != null;
   }
 
-  getStartTime(): number | null {
-    return this.startTime;
+  setPoint(coord: Coordinate): void {
+    if (this.clock == null) {
+      throw new Error("Recording has not started. Call startRecording first.");
+    }
+    this.coordinates = this.coordinates.insert(this.clock.getElapsedTime(), coord);
   }
 
   stopRecording(): void {
-    this.startTime = null;
+    this.clock = null;
   }
 
   getCoordAtTime(t: number): Coordinate | null {
-    // Should not happen now that we supply an initial coord
-    //if (this.coordinates.length === 0) {
-    //  return null; 
-    //}
-
     const iterator = this.coordinates.le(t);
     if (iterator.value == null) {
       return this.coordinates.end.value;
@@ -66,8 +58,6 @@ class CoordinateRecorder {
     ctx.strokeStyle = color;
     ctx.lineWidth = 4;
 
-    //console.log("Drawing up to", timestamp);
-
     while (iterator.valid) {
       const time = iterator.key;
       const coord = mapCoords(iterator.value);
@@ -83,11 +73,6 @@ class CoordinateRecorder {
         ctx.lineTo(coord.x, coord.y);
       }
 
-      //ctx.beginPath();
-      //ctx.arc(coord.x, coord.y, 10, 0, Math.PI * 2);
-      //ctx.fillStyle = "yellow";
-      //ctx.fill();
-      //ctx.closePath();
       iterator.next();
     }
 

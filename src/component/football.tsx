@@ -1,19 +1,26 @@
 import * as React from "react";
 import { useEffect, useRef } from "react";
 import { Camera } from "../canvas/camera";
-import { Player } from "../canvas/player";
 import { Field } from "../canvas/field";
-import { ActorCommon, ActorRegistry, Rapier } from "../utils/types";
+import { ActorCommon, ActorRegistry, Rapier, ReplayState } from "../utils/types";
 import { Mouse } from "../canvas/mouse";
 import { Actor } from "../canvas/actor";
-import { Clock } from "../canvas/clock";
+import { ClockActor } from "../canvas/clock-actor";
 import { FIELD_LENGTH, FIELD_WIDTH } from "../utils/constants";
 import { Track } from "./track";
-//import "../Routes.scss";
+import { Clock } from "../clock";
+import { MakePlay } from "../make-play";
 
 const camera = new Camera();
+//const clock = new Clock();
 
 export const Football = () => {
+
+  // These exists just to trigger a re-render when the clock changes
+  const [, setMaxTime] = React.useState<number>(0);
+  const [, setCurrentTime] = React.useState<number>(0);
+  const [clock] = React.useState<Clock>(new Clock(setMaxTime, setCurrentTime));
+
   const resizeCanvasToDisplaySize = (canvas: HTMLCanvasElement) => {
     const displayWidth = canvas.clientWidth;
     const displayHeight = canvas.clientHeight;
@@ -45,6 +52,7 @@ export const Football = () => {
         world,
         eventQueue,
         actorRegistry,
+        scene: new MakePlay()
       };
 
       const canvas = canvasRef.current;
@@ -53,7 +61,6 @@ export const Football = () => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      //const player = new Player(RAPIER, world, 10, 0, 0.75);
       const field = new Field({
         common,
         x: 0,
@@ -61,19 +68,19 @@ export const Football = () => {
         width: FIELD_WIDTH,
         height: FIELD_LENGTH,
       });
-      const clock = new Clock({ common });
+      const clockActor = new ClockActor({ common, clock });
       const mouse = new Mouse({
         common,
         camera,
         canvas: canvasRef.current,
         radius: 0.25,
-        clock,
+        clock: clockActor,
         addActor: (actor: Actor) => {
           actors.push(actor);
         },
       });
 
-      const actors: Array<Actor> = [field, clock, mouse];
+      const actors: Array<Actor> = [field, clockActor, mouse];
 
       const animate = () => {
         for (let actor of actors) {
@@ -114,7 +121,7 @@ export const Football = () => {
         ref={canvasRef}
         style={{ width: "100%", height: "100%" }}
       ></canvas>
-      <Track></Track>
+      <Track clock={clock}></Track>
     </div>
   );
 };

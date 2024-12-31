@@ -9,10 +9,11 @@ import { Camera } from "./camera";
 import { ActorCommon, Coordinate } from "../utils/types";
 import { Actor } from "./actor";
 import { Player } from "./player";
-import { Clock } from "./clock";
-import CoordinateRecorder from "./coordinate-recordet";
+import { ClockActor } from "./clock-actor";
+import CoordinateRecorder from "./coordinate-recorder";
 import { throttle } from "lodash";
 import { PLAYER_RADIUS } from "../utils/constants";
+import { Clock } from "../clock";
 
 export class Mouse extends Actor {
   private radius: number;
@@ -20,12 +21,20 @@ export class Mouse extends Actor {
   private y: number;
   private bufferTranslation: { x: number; y: number };
   private common: ActorCommon;
+  private clock: ClockActor;
+  private canvas: HTMLCanvasElement;
+  private addActor: (actor: Actor) => void;
+  private camera: Camera;
 
   private collider: Collider;
   private hoveredActor: Actor | null;
   private draggedActor: Actor | null;
-  private coordinator: CoordinateRecorder;
+  private draggedMouseCoordinates: CoordinateRecorder;
   private throttledSetPoint: (coord: Coordinate) => void;
+
+  private mouseDown: MouseEvent;
+  private mouseMove: MouseEvent;
+  private mouseUp: MouseEvent;
 
   constructor({
     common,
@@ -39,7 +48,7 @@ export class Mouse extends Actor {
     camera: Camera;
     canvas: HTMLCanvasElement;
     radius: number;
-    clock: Clock;
+    clock: ClockActor;
     addActor: (actor: Actor) => void;
   }) {
     const colliderDesc =
@@ -52,57 +61,24 @@ export class Mouse extends Actor {
     this.radius = radius;
     this.common = common;
     this.hoveredActor = null;
-    canvas.addEventListener("mousemove", (event: MouseEvent) => {
-      const canvasX = event.offsetX;
-      const canvasY = event.offsetY;
-      const worldCoords = camera.toWorldCoord(canvasX, canvasY);
-      this.bufferTranslation = worldCoords;
-      if (this.coordinator != null) {
-        this.coordinator.setPoint(worldCoords);
-      }
-      if (this.draggedActor instanceof Player) {
-        this.draggedActor.setTargetPath(this.coordinator);
-      }
-    });
+    this.clock = clock;
+    this.mouseDown = null;
+    this.mouseMove = null;
+    this.mouseUp = null;
+    this.canvas = canvas;
+    this.camera = camera;
+    this.addActor = addActor;
 
     canvas.addEventListener("mousedown", (event) => {
-      const rect = canvas.getBoundingClientRect();
-      const canvasX = event.clientX - rect.left;
-      const canvasY = event.clientY - rect.top;
-      const worldCoords = camera.toWorldCoord(canvasX, canvasY);
-      if (this.hoveredActor == null) {
-        addActor(
-          new Player({
-            common,
-            clock,
-            x: worldCoords.x,
-            y: worldCoords.y,
-            radius: PLAYER_RADIUS,
-          })
-        );
-      } else {
-        this.coordinator = new CoordinateRecorder({x: worldCoords.x, y: worldCoords.y});
-        this.coordinator.startRecording();
-        console.log("Selected actor", this.hoveredActor);
-        this.draggedActor = this.hoveredActor;
-      }
-      clock.start();
+      this.mouseDown = event;
+    });
+
+    canvas.addEventListener("mousemove", (event: MouseEvent) => {
+      this.mouseMove = event;
     });
 
     canvas.addEventListener("mouseup", (event) => {
-      console.log(
-        "MOUSE UP",
-        this.hoveredActor instanceof Player,
-        this.hoveredActor
-      );
-      if (this.draggedActor instanceof Player) {
-        this.draggedActor.setTargetPath(this.coordinator);
-      }
-      this.hoveredActor = null;
-      this.coordinator = null;
-      this.draggedActor = null;
-      clock.stop();
-      clock.reset();
+      this.mouseUp = event;
     });
   }
 
@@ -119,14 +95,78 @@ export class Mouse extends Actor {
     ctx.fill();
     ctx.closePath();
 
-    if (this.coordinator != null) {
-      this.coordinator.drawPath(ctx, (coord: Coordinate) => {
+    if (this.draggedMouseCoordinates != null) {
+      this.draggedMouseCoordinates.drawPath(ctx, (coord: Coordinate) => {
         return camera.toScreenCoord(coord.x, coord.y);
       }, "red");
     }
   }
 
   update(collisions: number[]): void {
+    if(this.mouseDown != null) {
+      const event = this.mouseDown;
+      const rect = this.canvas.getBoundingClientRect();
+      const canvasX = event.clientX - rect.left;
+      const canvasY = event.clientY - rect.top;
+      const worldCoords = this.camera.toWorldCoord(canvasX, canvasY);
+      if (this.hoveredActor == null) {
+        this.addActor(
+          new Player({
+            common: this.common,
+            clock: this.clock,
+            x: worldCoords.x,
+            y: worldCoords.y,
+            radius: PLAYER_RADIUS,
+          })
+        );
+      } else {
+        this.draggedMouseCoordinates = new CoordinateRecorder({x: worldCoords.x, y: worldCoords.y});
+        // Not sure if this matters in practice or not but we can fix this if players are starting at the wrong spots
+        this.draggedMouseCoordinates.startRecording(this.clock.getClock());
+        this.common.scene.setReplayState("record");
+        this.draggedActor = this.hoveredActor;
+
+        // We need to reset the positions AND movement paths of all players here
+        this.clock.reset(true);
+        
+        // And reset the target path of the dragged player (because we're about to create a new one!)
+        if(this.draggedActor instanceof Player) {
+          this.draggedActor.resetTargetPath();
+        }
+        this.clock.start();
+      }
+      this.mouseDown = null;
+    }
+
+    if(this.mouseMove != null) {
+      const event = this.mouseMove;
+      const canvasX = event.offsetX;
+      const canvasY = event.offsetY;
+      const worldCoords = this.camera.toWorldCoord(canvasX, canvasY);
+      this.bufferTranslation = worldCoords;
+      if (this.draggedMouseCoordinates != null) {
+        this.draggedMouseCoordinates.setPoint(worldCoords);
+      }
+      if (this.draggedActor instanceof Player) {
+        this.draggedActor.setTargetPath(this.draggedMouseCoordinates);
+      }
+      this.mouseMove = null;
+    } 
+
+    if(this.mouseUp != null) {
+      if (this.draggedActor instanceof Player) {
+        this.draggedActor.setTargetPath(this.draggedMouseCoordinates);
+      }
+      this.common.scene.setReplayState("replay");
+      this.draggedMouseCoordinates = null;
+      this.draggedActor = null;
+      this.clock.stop();
+
+      // We need to reset only the positions of the players (but keep the paths!)
+      this.clock.reset(false);
+      this.mouseUp = null;
+    }
+
     if (this.bufferTranslation) {
       this.collider.setTranslation(this.bufferTranslation);
       this.x = this.bufferTranslation.x;
