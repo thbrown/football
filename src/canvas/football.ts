@@ -168,6 +168,4 @@ export class Football extends Actor {
     }
       */
   }
-
-  
 }

@@ -56,6 +56,8 @@ export const Football = () => {
         scene: new MakePlay()
       };
 
+      console.log(world.timestep);
+
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -73,7 +75,7 @@ export const Football = () => {
       const mouse = new Mouse({
         common,
         camera,
-        canvas: canvasRef.current,
+        canvas: canvas,
         radius: 0.25,
         clock: clockActor,
         addActor: (actor: Actor) => {
@@ -84,7 +86,6 @@ export const Football = () => {
       const actors: Array<Actor> = [field, clockActor, mouse];
 
       const animate = () => {
-        //actors.sort((a, _b) => (a instanceof Football ? 1 : -1));
         for (let actor of actors) {
           const handle = actor.getHandle();
           const collider = world.getCollider(handle);
