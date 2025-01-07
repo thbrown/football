@@ -13,7 +13,10 @@ class CoordinateRecorder {
 
   startRecording(clock : Clock): void {
     this.clock = clock;
+    const previousStartingX = this.coordinates.begin.value.x;
+    const previousStartingY = this.coordinates.begin.value.y;
     this.coordinates = createRBTree(); // Reset the tree
+    this.coordinates = this.coordinates.insert(0, {x: previousStartingX, y: previousStartingY});
   }
 
   isRecording(): boolean {

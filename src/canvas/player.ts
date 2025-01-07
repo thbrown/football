@@ -12,7 +12,7 @@ import { Mouse } from "./mouse";
 import CoordinateRecorder from "./coordinate-recorder";
 import { ClockActor } from "./clock-actor";
 import { Kinematics } from "../utils/kinematics";
-import { PLAYER_ACCELERATION, PLAYER_MAX_SPEED } from "../utils/constants";
+import { PLAYER_ACCELERATION, PLAYER_DECELERATION, PLAYER_MAX_SPEED } from "../utils/constants";
 import { getDist } from "../utils/generic-utils";
 import { Clock } from "../clock";
 
@@ -28,6 +28,7 @@ export class Player extends Actor {
   private targetPath: CoordinateRecorder;
   private travledPath: CoordinateRecorder;
   private clock: ClockActor;
+  private playerNumber: string;
 
   constructor({
     common,
@@ -63,12 +64,19 @@ export class Player extends Actor {
     this.clock.setResetListener((hardReset) => {
       this.resetPosition(hardReset);
     });
-    this.targetPath = new CoordinateRecorder({x, y});
-    this.travledPath = new CoordinateRecorder({x, y});
+    this.targetPath = new CoordinateRecorder({ x, y });
+    this.travledPath = new CoordinateRecorder({ x, y });
+    const players = common.actorRegistry.getActorsByType(this.constructor.name);
+    const index = players.length - 1;
+    this.playerNumber = this.getCharForIndex(index);
+  }
+
+  private getCharForIndex(index: number): string {
+    return (index).toString();
   }
 
   resetTargetPath(): void {
-    this.targetPath = new CoordinateRecorder({x: this.x, y: this.y});
+    this.targetPath = new CoordinateRecorder({ x: this.initialX, y: this.initialY });
   }
 
   resetPosition(hardReset: boolean): void {
@@ -78,8 +86,9 @@ export class Player extends Actor {
       { x: this.initialX, y: this.initialY },
       true
     );
-    if(hardReset) {
-      this.travledPath = new CoordinateRecorder({x: this.initialX, y: this.initialY});
+    this.rigidBody.setLinvel({ x: 0, y: 0 }, true);
+    if (hardReset) {
+      this.travledPath = new CoordinateRecorder({ x: this.initialX, y: this.initialY });
     }
   }
 
@@ -89,6 +98,7 @@ export class Player extends Actor {
 
   draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
     // Draw paths first (so the player circle appears on top of them)
+    /*
     if (this.targetPath != null) {
       this.targetPath.drawPath(
         ctx,
@@ -98,9 +108,24 @@ export class Player extends Actor {
         "white",
         this.clock.getElapsedTime(),
       );
+    }*/
+
+    // Draw target
+    if (this.targetPath != null) {
+      const targetPosition = this.targetPath.getCoordAtTime(
+        this.clock.getElapsedTime()
+      ) ?? { x: this.initialX, y: this.initialY };
+
+      const screenTargetCoords = camera.toScreenCoord(targetPosition.x, targetPosition.y);
+      ctx.beginPath();
+      ctx.arc(screenTargetCoords.x, screenTargetCoords.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.closePath();
+      //ctx.fillText(this.clock.getElapsedTime().toFixed(2).toString(), screenTargetCoords.x, screenTargetCoords.y);
     }
 
-    if(this.travledPath != null) {
+    if (this.travledPath != null) {
       this.travledPath.drawPath(
         ctx,
         (coord: Coordinate) => {
@@ -116,26 +141,34 @@ export class Player extends Actor {
     const screenScale = camera.getScaleFactor();
     const screenRadius = this.radius * screenScale;
 
-    // Draw the ball
+    // Draw the player circle
     ctx.beginPath();
     ctx.arc(screenCoords.x, screenCoords.y, screenRadius, 0, Math.PI * 2);
     ctx.fillStyle = this.selected === true ? "red" : "blue";
     ctx.fill();
     ctx.closePath();
+
+    // Draw the player number
+    ctx.fillStyle = "white";
+    //ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(this.playerNumber, screenCoords.x, screenCoords.y);
+    
   }
 
   update(collisions: number[]): void {
     // Check if the player is selected (colliding mouse pointer)
     this.selected = false;
     for (let collision of collisions) {
-      const target = this.common.actorRegistry.get(collision);
+      const target = this.common.actorRegistry.getActor(collision);
       if (target instanceof Mouse) {
         this.selected = true;
       }
     }
 
     const replayState = this.common.scene.getReplayState();
-    if(replayState === "record") {
+    if (replayState === "record") {
       // Update draw location based on the physics engine
       const position = this.rigidBody.translation();
       this.x = position.x;
@@ -159,13 +192,13 @@ export class Player extends Actor {
         );
 
         // Deadzone, so we don't get jiggling players at the end of the route
-        if(getDist(this.rigidBody.translation(), targetPosition) < 0.1) {
+        if (getDist(this.rigidBody.translation(), targetPosition) < 0.1) {
           this.rigidBody.setLinvel({ x: 0, y: 0 }, true);
         } else {
           this.rigidBody.setLinvel(newLinearVelocity, true);
         }
-      } 
-    } else if(replayState === "replay") {
+      }
+    } else if (replayState === "replay") {
       const position = this.travledPath.getCoordAtTime(this.clock.getElapsedTime());
       this.x = position.x;
       this.y = position.y;
@@ -175,6 +208,14 @@ export class Player extends Actor {
         true
       );
     }
+  }
+
+  getX(): number {
+    return this.x;
+  }
+
+  getY(): number {
+    return this.y;
   }
 
   private calcLinearVelocity(
@@ -200,16 +241,17 @@ export class Player extends Actor {
       ) * (yDistToCoord < 0 ? 1 : -1);
 
     // We need to move more slowly if we are close to the target, otherwise we will overshoot
+    // TODO: this should use magnitured not independent direction
     const xVelocity2 =
       Kinematics.getInitialVelocity(
         0,
-        -PLAYER_ACCELERATION,
+        -PLAYER_DECELERATION,
         Math.abs(xDistToCoord)
       ) * (xDistToCoord < 0 ? 1 : -1);
     const yVelocity2 =
       Kinematics.getInitialVelocity(
         0,
-        -PLAYER_ACCELERATION,
+        -PLAYER_DECELERATION,
         Math.abs(yDistToCoord)
       ) * (yDistToCoord < 0 ? 1 : -1);
 

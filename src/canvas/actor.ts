@@ -1,7 +1,5 @@
 import {
-  Collider,
   ColliderDesc,
-  RigidBody,
   RigidBodyDesc,
   World,
 } from "@dimforge/rapier2d";
@@ -17,7 +15,7 @@ export abstract class Actor {
         ? Actor.createDummyHandle(common.world)
         : rapierHandle;
     this.handle = handle;
-    common.actorRegistry.set(handle, this);
+    common.actorRegistry.addActor(this);
   }
 
   abstract update(collisions: number[]): void;

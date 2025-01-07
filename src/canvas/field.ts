@@ -1,6 +1,6 @@
 import { Collider, EventQueue, RigidBody, World } from "@dimforge/rapier2d";
 import { Camera } from "./camera";
-import { ActorCommon, ActorRegistry, Rapier } from "../utils/types";
+import { ActorCommon, } from "../utils/types";
 import { Actor } from "./actor";
 import {
   FIELD_MAJOR_LINE_SPACING,

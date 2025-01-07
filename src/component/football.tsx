@@ -2,7 +2,7 @@ import * as React from "react";
 import { useEffect, useRef } from "react";
 import { Camera } from "../canvas/camera";
 import { Field } from "../canvas/field";
-import { ActorCommon, ActorRegistry, Rapier, ReplayState } from "../utils/types";
+import { ActorCommon, Rapier, ReplayState } from "../utils/types";
 import { Mouse } from "../canvas/mouse";
 import { Actor } from "../canvas/actor";
 import { ClockActor } from "../canvas/clock-actor";
@@ -10,6 +10,7 @@ import { FIELD_LENGTH, FIELD_WIDTH } from "../utils/constants";
 import { Track } from "./track";
 import { Clock } from "../clock";
 import { MakePlay } from "../make-play";
+import { ActorRegistry } from "../canvas/actor-registry";
 
 const camera = new Camera();
 //const clock = new Clock();
@@ -46,7 +47,7 @@ export const Football = () => {
       const gravity = { x: 0.0, y: 0 };
       const eventQueue = new RAPIER.EventQueue(true);
       const world = new RAPIER.World(gravity);
-      const actorRegistry: ActorRegistry = new Map();
+      const actorRegistry: ActorRegistry = new ActorRegistry();
       const common: ActorCommon = {
         rapier: RAPIER,
         world,
@@ -83,6 +84,7 @@ export const Football = () => {
       const actors: Array<Actor> = [field, clockActor, mouse];
 
       const animate = () => {
+        //actors.sort((a, _b) => (a instanceof Football ? 1 : -1));
         for (let actor of actors) {
           const handle = actor.getHandle();
           const collider = world.getCollider(handle);

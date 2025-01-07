@@ -30,6 +30,9 @@ export class Clock {
   }
 
   gotoTime(time: number): void {
+    if(time > this.maxTime) {
+      time = this.maxTime;
+    }
     this.timeElapsed = time;
     this.setCurrentTime(this.timeElapsed);
   }
@@ -51,7 +54,6 @@ export class Clock {
   reset(hardReset: boolean): void {
     this.timeElapsed = 0;
     this.setCurrentTime(this.timeElapsed);
-    console.log("Resetting clock", this.onResetListeners.length);
     for(const listener of this.onResetListeners) {
       listener(hardReset);
     }

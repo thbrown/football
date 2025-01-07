@@ -14,6 +14,7 @@ import CoordinateRecorder from "./coordinate-recorder";
 import { throttle } from "lodash";
 import { PLAYER_RADIUS } from "../utils/constants";
 import { Clock } from "../clock";
+import { Football } from "./football";
 
 export class Mouse extends Actor {
   private radius: number;
@@ -110,17 +111,33 @@ export class Mouse extends Actor {
       const canvasY = event.clientY - rect.top;
       const worldCoords = this.camera.toWorldCoord(canvasX, canvasY);
       if (this.hoveredActor == null) {
+
+        const playerToAdd = new Player({
+          common: this.common,
+          clock: this.clock,
+          x: worldCoords.x,
+          y: worldCoords.y,
+          radius: PLAYER_RADIUS,
+        });
         this.addActor(
-          new Player({
-            common: this.common,
-            clock: this.clock,
-            x: worldCoords.x,
-            y: worldCoords.y,
-            radius: PLAYER_RADIUS,
-          })
+          playerToAdd
         );
+        if(this.common.actorRegistry.getActorsByType(playerToAdd.constructor.name).length === 1) {
+          this.addActor(
+            new Football({
+              common: this.common,
+              clock: this.clock,
+              x: playerToAdd.getX(),
+              y: playerToAdd.getY(),
+              controllingPlayer: playerToAdd,
+            })
+          )
+        }
       } else {
-        this.draggedMouseCoordinates = new CoordinateRecorder({x: worldCoords.x, y: worldCoords.y});
+        const startX = this.draggedActor instanceof Player ? this.draggedActor.getX() : worldCoords.x;
+        const startY = this.draggedActor instanceof Player ? this.draggedActor.getY() : worldCoords.y;
+        this.draggedMouseCoordinates = new CoordinateRecorder({x: startX, y: startY});
+
         // Not sure if this matters in practice or not but we can fix this if players are starting at the wrong spots
         this.draggedMouseCoordinates.startRecording(this.clock.getClock());
         this.common.scene.setReplayState("record");
@@ -175,7 +192,7 @@ export class Mouse extends Actor {
     // Just get the top actor
     this.hoveredActor = null;
     for (let collision of collisions) {
-      this.hoveredActor = this.common.actorRegistry.get(collision);
+      this.hoveredActor = this.common.actorRegistry.getActor(collision);
       break;
     }
   }
