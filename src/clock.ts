@@ -3,6 +3,7 @@
 export class Clock {
   private timeElapsed: number; // Time in miliseconds
   private isActive: boolean;
+  private isRecording: boolean;
   private lastUpdateTime: number;
   private maxTime: number;
   private onResetListeners: ((hardReset: boolean) => void)[] = [];
@@ -20,13 +21,20 @@ export class Clock {
     this.setMaxTime = setMaxTime;
   }
 
-  start(): void {
+  record(): void {
+    this.isActive = true;
+    this.isRecording = true;
+    this.lastUpdateTime = performance.now();
+  }
+
+  play(): void {
     this.isActive = true;
     this.lastUpdateTime = performance.now();
   }
 
   stop(): void {
     this.isActive = false;
+    this.isRecording = false;
   }
 
   gotoTime(time: number): void {
@@ -70,6 +78,14 @@ export class Clock {
 
   getMaxTime(): number {
     return this.maxTime;
+  }
+
+  getIsActive(): boolean {
+    return this.isActive;
+  }
+
+  getIsRecording(): boolean {
+    return this.isRecording;
   }
 
 }

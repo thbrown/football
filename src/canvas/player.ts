@@ -12,9 +12,9 @@ import { Mouse } from "./mouse";
 import CoordinateRecorder from "./coordinate-recorder";
 import { ClockActor } from "./clock-actor";
 import { Kinematics } from "../utils/kinematics";
-import { PLAYER_ACCELERATION, PLAYER_DECELERATION, PLAYER_MAX_SPEED } from "../utils/constants";
+import { MAGIC_VELOCITY_CONSTANT, PLAYER_ACCELERATION, PLAYER_DECELERATION, PLAYER_MAX_SPEED } from "../utils/constants";
 import { getDist } from "../utils/generic-utils";
-import { Clock } from "../clock";
+import { ActorRegistry } from "./actor-registry";
 
 export class Player extends Actor {
   private radius: number;
@@ -29,6 +29,7 @@ export class Player extends Actor {
   private travledPath: CoordinateRecorder;
   private clock: ClockActor;
   private playerNumber: string;
+  private isMoved: boolean = false;
 
   constructor({
     common,
@@ -66,13 +67,17 @@ export class Player extends Actor {
     });
     this.targetPath = new CoordinateRecorder({ x, y });
     this.travledPath = new CoordinateRecorder({ x, y });
-    const players = common.actorRegistry.getActorsByType(this.constructor.name);
-    const index = players.length - 1;
-    this.playerNumber = this.getCharForIndex(index);
+    this.playerNumber = this.getPlayerNumber(common.actorRegistry);
   }
 
-  private getCharForIndex(index: number): string {
-    return (index).toString();
+  private getPlayerNumber(registry: ActorRegistry): string {
+    const players = registry.getActorsByType(Player.name) as Player[];
+    const takenNumbers = new Set(players.map(player => player.playerNumber));
+    let playerNumber = 1;
+    while (takenNumbers.has(playerNumber.toString())) {
+      playerNumber++;
+    }
+    return playerNumber.toString();
   }
 
   resetTargetPath(): void {
@@ -94,6 +99,7 @@ export class Player extends Actor {
 
   setTargetPath(value: CoordinateRecorder): void {
     this.targetPath = value;
+    this.isMoved = true;
   }
 
   draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
@@ -122,7 +128,9 @@ export class Player extends Actor {
       ctx.fillStyle = "red";
       ctx.fill();
       ctx.closePath();
-      //ctx.fillText(this.clock.getElapsedTime().toFixed(2).toString(), screenTargetCoords.x, screenTargetCoords.y);
+      if(this.isMoved && this.clock.getElapsedTime() > 0) {
+        ctx.fillText(this.getNumber(), screenTargetCoords.x, screenTargetCoords.y - 20);
+      }
     }
 
     if (this.travledPath != null) {
@@ -167,8 +175,7 @@ export class Player extends Actor {
       }
     }
 
-    const replayState = this.common.scene.getReplayState();
-    if (replayState === "record") {
+    if (this.clock.getClock().getIsRecording()) {
       // Update draw location based on the physics engine
       const position = this.rigidBody.translation();
       this.x = position.x;
@@ -195,10 +202,10 @@ export class Player extends Actor {
         if (getDist(this.rigidBody.translation(), targetPosition) < 0.1) {
           this.rigidBody.setLinvel({ x: 0, y: 0 }, true);
         } else {
-          this.rigidBody.setLinvel(newLinearVelocity, true);
+          this.rigidBody.setLinvel({x: newLinearVelocity.x/MAGIC_VELOCITY_CONSTANT, y: newLinearVelocity.y/MAGIC_VELOCITY_CONSTANT}, true);
         }
       }
-    } else if (replayState === "replay") {
+    } else {
       const position = this.travledPath.getCoordAtTime(this.clock.getElapsedTime());
       this.x = position.x;
       this.y = position.y;
@@ -218,6 +225,14 @@ export class Player extends Actor {
     return this.y;
   }
 
+  getNumber(): string {
+    return this.playerNumber;
+  }
+
+  getDepth(): number {
+    return 1;
+  }
+
   private calcLinearVelocity(
     currentPosition: Coordinate,
     targetPosition: Coordinate,
@@ -228,13 +243,13 @@ export class Player extends Actor {
 
     // Run as fast as possible to the target
     const xVelocity1 =
-      Kinematics.getFinalVelocity(
+      Kinematics.getFinalVelocity2(
         currentVelocity.x,
         PLAYER_ACCELERATION,
         Math.abs(xDistToCoord)
       ) * (xDistToCoord < 0 ? 1 : -1);
     const yVelocity1 =
-      Kinematics.getFinalVelocity(
+      Kinematics.getFinalVelocity2(
         currentVelocity.y,
         PLAYER_ACCELERATION,
         Math.abs(yDistToCoord)

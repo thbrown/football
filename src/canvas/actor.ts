@@ -15,13 +15,20 @@ export abstract class Actor {
         ? Actor.createDummyHandle(common.world)
         : rapierHandle;
     this.handle = handle;
-    common.actorRegistry.addActor(this);
   }
 
-  abstract update(collisions: number[]): void;
+  abstract update(collisions: number[], pressedKeys: Set<string>): void;
   abstract draw(ctx: CanvasRenderingContext2D, camera: Camera): void;
   public getHandle(): number {
     return this.handle;
+  }
+
+  public getDepth(): number {
+    return 0;
+  }
+
+  public deleteDescendants(): void {
+    // No-op
   }
 
   private static createDummyHandle(world: World): number {
@@ -37,4 +44,5 @@ export abstract class Actor {
 
     return body.handle;
   }
+
 }

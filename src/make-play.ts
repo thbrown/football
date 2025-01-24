@@ -7,6 +7,8 @@ export class MakePlay {
         this.replayState = "replay";
     }
 
+    // Moved this to the clock
+    /*
     getReplayState() {
         return this.replayState;
     }
@@ -14,4 +16,5 @@ export class MakePlay {
     setReplayState(replayState: ReplayState) {
         this.replayState = replayState;
     }
+        */
 }

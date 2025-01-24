@@ -11,11 +11,17 @@ import { Track } from "./track";
 import { Clock } from "../clock";
 import { MakePlay } from "../make-play";
 import { ActorRegistry } from "../canvas/actor-registry";
+import { Player } from "../canvas/player";
+import createRBTree, { Tree } from "functional-red-black-tree";
+import { PhysicsWorldHistory } from "../physics-world-history";
+import { Kinematics } from "../utils/kinematics";
+import { BallCarrier } from "../canvas/ball-carrier";
+import { Football } from "../canvas/football";
 
 const camera = new Camera();
-//const clock = new Clock();
+const scene = new MakePlay();
 
-export const Football = () => {
+export const Main = () => {
 
   // These exists just to trigger a re-render when the clock changes
   const [, setMaxTime] = React.useState<number>(0);
@@ -34,6 +40,21 @@ export const Football = () => {
       canvas.width = displayWidth;
       canvas.height = displayHeight;
       camera.setCanvasDimensions(displayWidth, displayHeight);
+
+      const SPEED = 100;
+      const launchAngle = Kinematics.calcMinLaunchAngle(1000, SPEED);
+      const angleDegrees = (launchAngle * 180) / Math.PI;
+      const landingTime = Kinematics.calcLandingTime(0, SPEED*Math.sin(launchAngle));
+      console.log("DEG", angleDegrees, landingTime);
+
+      for(let time = 0; time < (landingTime + 1); time += .5) {
+        const height = Kinematics.calcHeight(0, SPEED*Math.sin(launchAngle), time);
+        console.log(time, height);
+      }
+      /*
+      for(let angle = 0; angle < 360; angle += 45) {
+        Kinematics
+      }*/
     }
 
     return needResize;
@@ -41,19 +62,40 @@ export const Football = () => {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  
+  // Key Listeners
+  const pressedKeys = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      pressedKeys.current.add(event.key);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+    
+  }, []);
+
   useEffect(() => {
     import("@dimforge/rapier2d").then((RAPIER: Rapier) => {
       console.log("Loaded rapier2d", RAPIER);
       const gravity = { x: 0.0, y: 0 };
       const eventQueue = new RAPIER.EventQueue(true);
       const world = new RAPIER.World(gravity);
+      const physicsWorldHistory = new PhysicsWorldHistory(world);
       const actorRegistry: ActorRegistry = new ActorRegistry();
+      const ballCarrier = new BallCarrier();
+
       const common: ActorCommon = {
         rapier: RAPIER,
         world,
         eventQueue,
         actorRegistry,
-        scene: new MakePlay()
+        scene: scene,
+        physicsWorldHistory,
+        ballCarrier: ballCarrier,
       };
 
       console.log(world.timestep);
@@ -78,14 +120,23 @@ export const Football = () => {
         canvas: canvas,
         radius: 0.25,
         clock: clockActor,
-        addActor: (actor: Actor) => {
-          actors.push(actor);
-        },
+      });
+      const football = new Football({
+        common: common,
+        clock: clockActor,
+        x: 0,
+        y: 0,
       });
 
-      const actors: Array<Actor> = [field, clockActor, mouse];
+      ballCarrier.setFootball(football);
+
+      actorRegistry.addActor(field);
+      actorRegistry.addActor(football);
+      actorRegistry.addActor(clockActor);
+      actorRegistry.addActor(mouse);
 
       const animate = () => {
+        const actors: Array<Actor> = actorRegistry.getActorListForDrawing();
         for (let actor of actors) {
           const handle = actor.getHandle();
           const collider = world.getCollider(handle);
@@ -94,10 +145,14 @@ export const Football = () => {
             collisionHandles.push(otherHandle.handle);
           });
 
-          actor.update(collisionHandles);
+          actor.update(collisionHandles, pressedKeys.current);
           world.step(eventQueue);
           actor.draw(ctx, camera);
         }
+        if(clock.getIsRecording()) {
+          physicsWorldHistory.addPhysicsAtTime(clock.getElapsedTime(), world);
+        }
+        pressedKeys.current.clear();
         requestAnimationFrame(animate);
       };
 
@@ -124,7 +179,7 @@ export const Football = () => {
         ref={canvasRef}
         style={{ width: "100%", height: "100%" }}
       ></canvas>
-      <Track clock={clock}></Track>
+      <Track clock={clock} scene={scene}></Track>
     </div>
   );
 };

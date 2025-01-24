@@ -3,12 +3,12 @@ import { HotkeysProvider } from "@blueprintjs/core";
 import { createHashRouter, RouterProvider } from "react-router-dom";
 
 import "./Routes.scss";
-import { Football } from "./component/football";
+import { Main } from "./component/main";
 
 const router = createHashRouter([
   {
     path: "",
-    element: <Football />,
+    element: <Main />,
   },
 ]);
 

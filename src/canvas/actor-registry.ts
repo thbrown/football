@@ -25,6 +25,7 @@ export class ActorRegistry {
             this.actorTypeLookup.set(actorType, []);
         }
         this.actorTypeLookup.get(actorType)?.push(actor);
+        console.log(this.actorTypeLookup);
         this.actorLookup.set(actor.getHandle(), actor);
     }
     
@@ -42,6 +43,13 @@ export class ActorRegistry {
                 this.actorTypeLookup.delete(actorType);
             }
         }
+    }
+
+    getActorListForDrawing(): Actor[] {
+        const actors = Array.from(this.actorLookup.values());
+        actors.sort((a, b) => a.getDepth() - b.getDepth());
+        //console.log(actors);
+        return actors;
     }
 
 }

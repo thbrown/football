@@ -11,8 +11,12 @@ export class ClockActor extends Actor {
     this.clock = clock;
   }
 
-  start(): void {
-    this.clock.start();
+  record(): void {
+    this.clock.record();
+  }
+
+  play(): void {
+    this.clock.play();
   }
 
   stop(): void {
