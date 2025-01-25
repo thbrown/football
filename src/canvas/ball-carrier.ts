@@ -16,12 +16,11 @@ export class BallCarrier {
 
     setCarrier(player: Player) {
         this.player = player;
-        if(this.mostRecentPlayer == null) {
+        if(player != null) {
             this.mostRecentPlayer = player;
         }
-        if(player != null) {
+        if(player != null && this.initialPlayer == null) {
             this.initialPlayer = player;
-
             if(this.football != null) {
                 this.football.resetPosition(true);
             }
