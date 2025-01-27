@@ -1,7 +1,7 @@
 import { Camera } from "./camera";
 import { Actor } from "./actor";
-import { ActorCommon } from "../utils/types";
 import { Clock } from "../clock";
+import { ActorCommon } from "./actor-common";
 
 export class ClockActor extends Actor {
   private clock: Clock;

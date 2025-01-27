@@ -2,51 +2,46 @@ import { Actor } from "./actor";
 
 export class ActorRegistry {
 
-    private actorTypeLookup: Map<string, Actor[]> = new Map();
-    private actorLookup: Map<number, Actor>;
-
-    constructor() {
-        this.actorLookup = new Map();
-    }
+    private actorTypeLookup: { [key: string]: Actor[] } = {};
+    private actorLookup: { [key: string]: Actor } = {};
 
     getActor(handle: number): Actor | undefined {
-        return this.actorLookup.get(handle);
+        return this.actorLookup[handle];
     }
 
     getActorsByType(type: string): Actor[] {
-        return this.actorTypeLookup.get(type) || [];
+        return this.actorTypeLookup[type] || [];
     }
 
     addActor(actor: Actor): void {
-        this.actorLookup.set(actor.getHandle(), actor);
+        this.actorLookup[actor.getHandle()] = actor;
     
         const actorType = actor.constructor.name;
-        if (!this.actorTypeLookup.has(actorType)) {
-            this.actorTypeLookup.set(actorType, []);
+        if (!this.actorTypeLookup[actorType]) {
+            this.actorTypeLookup[actorType] = [];
         }
-        this.actorTypeLookup.get(actorType)?.push(actor);
+        this.actorTypeLookup[actorType].push(actor);
         console.log(this.actorTypeLookup);
-        this.actorLookup.set(actor.getHandle(), actor);
     }
     
     removeActor(actor: Actor): void {
-        this.actorLookup.delete(actor.getHandle());
+        delete this.actorLookup[actor.getHandle()];
     
         const actorType = actor.constructor.name;
-        const actorsOfType = this.actorTypeLookup.get(actorType);
+        const actorsOfType = this.actorTypeLookup[actorType];
         if (actorsOfType) {
             const index = actorsOfType.indexOf(actor);
             if (index > -1) {
                 actorsOfType.splice(index, 1);
             }
             if (actorsOfType.length === 0) {
-                this.actorTypeLookup.delete(actorType);
+                delete this.actorTypeLookup[actorType];
             }
         }
     }
 
     getActorListForDrawing(): Actor[] {
-        const actors = Array.from(this.actorLookup.values());
+        const actors = Object.values(this.actorLookup);
         actors.sort((a, b) => a.getDepth() - b.getDepth());
         //console.log(actors);
         return actors;

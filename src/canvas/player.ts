@@ -6,7 +6,8 @@ import {
   World,
 } from "@dimforge/rapier2d";
 import { Camera } from "./camera";
-import { ActorCommon, Coordinate, Rapier } from "../utils/types";
+import { Coordinate, Rapier } from "../utils/types";
+import { ActorCommon } from "./actor-common";
 import { Actor } from "./actor";
 import { Mouse } from "./mouse";
 import CoordinateRecorder from "./coordinate-recorder";

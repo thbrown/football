@@ -6,7 +6,7 @@ import {
   World,
 } from "@dimforge/rapier2d";
 import { Camera } from "./camera";
-import { ActorCommon, Coordinate, Rapier } from "../utils/types";
+import { Coordinate, Rapier } from "../utils/types";
 import { Actor } from "./actor";
 import { Mouse } from "./mouse";
 import CoordinateRecorder from "./coordinate-recorder";
@@ -16,6 +16,7 @@ import { FOOTBALL_HEIGHT, FOOTBALL_SPEED, FOOTBALL_WIDTH, PLAYER_ACCELERATION, P
 import { getDist } from "../utils/generic-utils";
 import { Clock } from "../clock";
 import { Player } from "./player";
+import { ActorCommon } from "./actor-common";
 
 export class Football extends Actor {
   private radius: number;
@@ -73,13 +74,13 @@ export class Football extends Actor {
       { x: initialX, y: initialY },
       true
     );
-    if(hardReset) {
+    if (hardReset) {
       this.travledPath = new CoordinateRecorder({ x: initialX, y: initialY });
     }
   }
 
   draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
-    if(this.common.ballCarrier.getInitialPlayer() == null) {
+    if (this.common.ballCarrier.getInitialPlayer() == null) {
       return;
     }
 
@@ -157,7 +158,7 @@ export class Football extends Actor {
             console.log(`Throwing football to player ${player.getNumber()}`);
 
             // const playerPosition = {x: player.getX(), y: player.getY()};
-            const playerPosition = getEstimatedPlayerPosition(player, this.common.physicsWorldHistory.getPhysicsAtTime(this.clock.getClock().getElapsedTime()));
+            const playerPosition = getEstimatedPlayerPosition(player, this.common);
 
             // Calculate the ball's launch angle based on distance between the player and the football and the player's throwing power
             const distance = Math.sqrt(
@@ -190,7 +191,7 @@ export class Football extends Actor {
         this.x = this.rigidBody.translation().x;
         this.y = this.rigidBody.translation().y;
         const msSinceBallWasThrown = this.clock.getClock().getElapsedTime() - this.throwStartTimestamp;
-        this.height = Math.max(Kinematics.calcHeight(0, this.verticalVelocity, msSinceBallWasThrown/1000), 0);
+        this.height = Math.max(Kinematics.calcHeight(0, this.verticalVelocity, msSinceBallWasThrown / 1000), 0);
       } else {
         this.x = this.common.ballCarrier.getPlayer().getX();
         this.y = this.common.ballCarrier.getPlayer().getY();
@@ -219,10 +220,10 @@ export class Football extends Actor {
   getDepth(): number {
     return 2;
   }
-  
+
 }
 
-function getEstimatedPlayerPosition(player: Player, world: World) {
+function getEstimatedPlayerPosition(player: Player, common: ActorCommon) {
   return { x: player.getX(), y: player.getY() };
 }
 
