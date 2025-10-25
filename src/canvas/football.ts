@@ -1,30 +1,19 @@
-import {
-  Collider,
-  EventQueue,
-  RigidBody,
-  RigidBodyDesc,
-  World,
-} from "@dimforge/rapier2d";
+
 import { Camera } from "./camera";
 import { Coordinate, Rapier } from "../utils/types";
 import { Actor } from "./actor";
-import { Mouse } from "./mouse";
 import CoordinateRecorder from "./coordinate-recorder";
 import { ClockActor } from "./clock-actor";
 import { Kinematics } from "../utils/kinematics";
 import { FOOTBALL_HEIGHT, FOOTBALL_SPEED, FOOTBALL_WIDTH, PLAYER_ACCELERATION, PLAYER_DECELERATION, PLAYER_MAX_SPEED, MAGIC_VELOCITY_CONSTANT } from "../utils/constants";
-import { getDist } from "../utils/generic-utils";
-import { Clock } from "../clock";
 import { Player } from "./player";
 import { ActorCommon } from "./actor-common";
+import { ActorRegistry } from "./actor-registry";
 
 export class Football extends Actor {
-  private radius: number;
   private x: number;
   private y: number;
   private height: number;
-  private rigidBody: RigidBody;
-  private common: ActorCommon;
   private clock: ClockActor;
   private throwStartTimestamp: number;
   private verticalVelocity: number;
@@ -49,28 +38,27 @@ export class Football extends Actor {
     const colliderDesc = common.rapier.ColliderDesc.ball(FOOTBALL_WIDTH);
     const collider = common.world.createCollider(colliderDesc, rigidBody);
     collider.setSensor(true);
-    super(common, collider.handle);
+    super(common, rigidBody.handle, collider.handle);
 
-    this.common = common;
     this.x = x;
     this.y = y;
-    this.rigidBody = rigidBody;
     this.clock = clock;
-    this.clock.setResetListener((hardReset) => {
-      this.resetPosition(hardReset);
+    this.clock.setResetListener((common, hardReset) => {
+      this.resetPosition(common, hardReset);
     });
     this.height = 0;
     this.travledPath = new CoordinateRecorder({ x, y });
   }
 
-  resetPosition(hardReset: boolean): void {
-    const initialX = this.common.ballCarrier.getInitialPlayer().getX();
-    const initialY = this.common.ballCarrier.getInitialPlayer().getY();
+  resetPosition(common: ActorCommon, hardReset: boolean): void {
+    console.log("Resetting football position", common);
+    const initialX = common.ballCarrier.getInitialPlayer().getX();
+    const initialY = common.ballCarrier.getInitialPlayer().getY();
     this.x = initialX;
     this.y = initialY;
-    this.common.ballCarrier.reset();
+    common.ballCarrier.reset();
     this.height = 0;
-    this.rigidBody.setTranslation(
+    common.world.getRigidBody(this.getRigidBodyHandle()).setTranslation(
       { x: initialX, y: initialY },
       true
     );
@@ -79,8 +67,8 @@ export class Football extends Actor {
     }
   }
 
-  draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
-    if (this.common.ballCarrier.getInitialPlayer() == null) {
+  draw(common: ActorCommon, ctx: CanvasRenderingContext2D, camera: Camera): void {
+    if (common.ballCarrier.getInitialPlayer() == null) {
       return;
     }
 
@@ -133,32 +121,31 @@ export class Football extends Actor {
     }
   }
 
-  update(collisions: number[], pressedKeys: Set<String>): void {
+  update(common: ActorCommon, collisions: number[], pressedKeys: Set<String>): void {
     // The code here implies that the football is throwing itself, but it would be more representitive (and therefore more extensible) if the player throws the football
+    const rigidBody = common.world.getRigidBody(this.getRigidBodyHandle());
     if (this.clock.getClock().getIsRecording()) {
       for (let collision of collisions) {
-        if (this.common.ballCarrier.getPlayer() != null) {
+        if (common.ballCarrier.getPlayer() != null) {
           break;
         }
-        const target = this.common.actorRegistry.getActor(collision);
+        const target = common.actorRegistry.getActorByColliderHandle(collision);
         // Can't pass a ball to yourself for now
-        if (target instanceof Player && target != this.common.ballCarrier.getMostRecentPlayer()) {
-          this.common.ballCarrier.setCarrier(target);
-          //this.controllingPlayer = target;
-          //this.mostRecentControllingPlayer = target;
+        if (target instanceof Player && target != common.ballCarrier.getMostRecentPlayer()) {
+          common.ballCarrier.setCarrier(common, target);
           break;
         }
       }
 
       pressedKeys.forEach((key) => {
-        this.common.actorRegistry.getActorsByType(Player.name).forEach((actor) => {
+        common.actorRegistry.getActorsByType(Player.name).forEach((actor) => {
           const player = actor as Player;
           if (player.getNumber() === key) {
             // Throw the football to the player that matches the key
             console.log(`Throwing football to player ${player.getNumber()}`);
 
-            // const playerPosition = {x: player.getX(), y: player.getY()};
-            const playerPosition = getEstimatedPlayerPosition(player, this.common);
+            const playerPosition = {x: player.getX(), y: player.getY()};
+            //const playerPosition = getEstimatedPlayerPosition(player, common);
 
             // Calculate the ball's launch angle based on distance between the player and the football and the player's throwing power
             const distance = Math.sqrt(
@@ -176,26 +163,26 @@ export class Football extends Actor {
             const xDiff = player.getX() - this.x;
             const yDiff = player.getY() - this.y;
             const angle = Math.atan2(yDiff, xDiff);
-            this.rigidBody.setLinvel({
+            rigidBody.setLinvel({
               x: horizontalVelocity * Math.cos(angle) / MAGIC_VELOCITY_CONSTANT,
               y: horizontalVelocity * Math.sin(angle) / MAGIC_VELOCITY_CONSTANT
             }, true);
-            this.common.ballCarrier.setCarrier(null);
+            common.ballCarrier.setCarrier(common, null);
             this.throwStartTimestamp = this.clock.getClock().getElapsedTime();
             return;
           }
         });
       });
 
-      if (this.common.ballCarrier.getPlayer() == null) {
-        this.x = this.rigidBody.translation().x;
-        this.y = this.rigidBody.translation().y;
+      if (common.ballCarrier.getPlayer() == null) {
+        this.x = rigidBody.translation().x;
+        this.y = rigidBody.translation().y;
         const msSinceBallWasThrown = this.clock.getClock().getElapsedTime() - this.throwStartTimestamp;
         this.height = Math.max(Kinematics.calcHeight(0, this.verticalVelocity, msSinceBallWasThrown / 1000), 0);
       } else {
-        this.x = this.common.ballCarrier.getPlayer().getX();
-        this.y = this.common.ballCarrier.getPlayer().getY();
-        this.rigidBody.setTranslation(
+        this.x = common.ballCarrier.getPlayer().getX();
+        this.y = common.ballCarrier.getPlayer().getY();
+        rigidBody.setTranslation(
           { x: this.x, y: this.y },
           true
         );
@@ -210,20 +197,40 @@ export class Football extends Actor {
       const position = this.travledPath.getCoordAtTime(this.clock.getElapsedTime());
       this.x = position.x;
       this.y = position.y;
-      this.rigidBody.setTranslation(
+      rigidBody.setTranslation(
         { x: this.x, y: this.y },
         true
       );
     }
   }
 
+  clone(registry: ActorRegistry, common: ActorCommon): Football {
+    // Assume we are copying a world with one clock actor
+    const clocks = registry.getActorsByType(ClockActor.name);
+    const clone = new Football({clock: clocks[0] as ClockActor, common, x: this.x, y: this.y});
+    clone.height = this.height;
+    clone.throwStartTimestamp = this.throwStartTimestamp;
+    clone.verticalVelocity = this.verticalVelocity;
+    this.travledPath = this.travledPath.clone();
+    return clone;
+  }
+
   getDepth(): number {
     return 2;
   }
-
 }
 
 function getEstimatedPlayerPosition(player: Player, common: ActorCommon) {
+  const duplicateUniverse = ActorCommon.takeSnapshot(common);
+  const stepFunction = ActorCommon.getStepFunction(duplicateUniverse);
+
+  // Simulate 6 seconds into the future
+  const startTime = performance.now();
+  for(let i = 0; i < 360; i++) {
+    stepFunction(null, null, new Set());
+  }
+  const endTime = performance.now();
+  console.log(`Elapsed time for simulation: ${endTime - startTime} ms`);
   return { x: player.getX(), y: player.getY() };
 }
 

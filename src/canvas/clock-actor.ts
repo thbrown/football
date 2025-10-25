@@ -2,6 +2,7 @@ import { Camera } from "./camera";
 import { Actor } from "./actor";
 import { Clock } from "../clock";
 import { ActorCommon } from "./actor-common";
+import { ActorRegistry } from "./actor-registry";
 
 export class ClockActor extends Actor {
   private clock: Clock;
@@ -23,15 +24,15 @@ export class ClockActor extends Actor {
     this.clock.stop();
   }
 
-  reset(hardReset: boolean): void {
-    this.clock.reset(hardReset);
+  reset(common: ActorCommon, hardReset: boolean): void {
+    this.clock.reset(common, hardReset);
   }
 
-  setResetListener(listener: (hardReset: boolean) => void): void {
+  setResetListener(listener: (common: ActorCommon, hardReset: boolean) => void): void {
     this.clock.setResetListener(listener);
   } 
 
-  update(_collisions: number[]): void {
+  update(_common: ActorCommon, _collisions: number[]): void {
     this.clock.update();
   }
 
@@ -39,7 +40,7 @@ export class ClockActor extends Actor {
     return this.clock;
   }
 
-  draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
+  draw(common: ActorCommon, ctx: CanvasRenderingContext2D, camera: Camera): void {
     const timeString = this.formatTime(this.clock.getElapsedTime()/1000);
 
     // Position the clock in the lower right corner
@@ -63,6 +64,12 @@ export class ClockActor extends Actor {
 
   getElapsedTime(): number {
     return this.clock.getElapsedTime();
+  }
+
+  clone(registry: ActorRegistry, common: ActorCommon): ClockActor {
+    const clonedClock = this.clock.clone();
+    const clone = new ClockActor({ common, clock: clonedClock });
+    return clone;
   }
 
   private formatTime(time: number): string {

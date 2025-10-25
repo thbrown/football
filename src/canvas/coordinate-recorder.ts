@@ -43,6 +43,12 @@ class CoordinateRecorder {
     return iterator.value;
   }
 
+  clone(): CoordinateRecorder {
+    const newRecorder = new CoordinateRecorder(null);
+    newRecorder.coordinates = this.coordinates; // Functional data structure means these are immutable and can be re-used
+    return newRecorder;
+  }
+
   drawPath(
     ctx: CanvasRenderingContext2D,
     mapCoords: (coord: Coordinate) => Coordinate,

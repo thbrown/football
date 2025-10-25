@@ -1,21 +1,20 @@
 import { Collider, EventQueue, RigidBody, World } from "@dimforge/rapier2d";
 import { Camera } from "./camera";
-import { ActorCommon, } from "../utils/types";
 import { Actor } from "./actor";
 import {
   FIELD_MAJOR_LINE_SPACING,
   FIELD_MINOR_LINE_SPACING,
   FIELD_TICK_WIDTH,
 } from "../utils/constants";
+import { ActorCommon } from "./actor-common";
+import { ActorRegistry } from "./actor-registry";
+import { Football } from "./football";
 
 export class Field extends Actor {
   private x: number;
   private y: number;
   private width: number;
   private height: number;
-  private collider: Collider;
-  private rigidBody: RigidBody;
-  private common: ActorCommon;
 
   constructor({
     common,
@@ -37,7 +36,7 @@ export class Field extends Actor {
     this.height = height;
   }
 
-  draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
+  draw(common: ActorCommon, ctx: CanvasRenderingContext2D, camera: Camera): void {
     // Get screen coords
     const screenCoords = camera.toScreenCoord(this.x, this.y);
     const screenScale = camera.getScaleFactor();
@@ -122,5 +121,16 @@ export class Field extends Actor {
     }
   }
 
-  update(collisions: number[]): void {}
+  update(common: ActorCommon, collisions: number[]): void {}
+
+  clone(_registry: ActorRegistry, common: ActorCommon): Field {
+    const clonedFiled = new Field({
+      common,
+      x: this.x,
+      y: this.y, 
+      width: this.width,
+      height: this.height
+    });
+    return clonedFiled;
+  }
 }

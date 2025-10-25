@@ -1,5 +1,6 @@
 import { Player } from './player';
 import { Football } from './football';
+import { ActorCommon } from './actor-common';
 
 export class BallCarrier {
     private football: Football;
@@ -14,7 +15,8 @@ export class BallCarrier {
         this.football = football;
     }
 
-    setCarrier(player: Player) {
+    // Passing common here seems a bit weird
+    setCarrier(common: ActorCommon, player: Player) {
         this.player = player;
         if(player != null) {
             this.mostRecentPlayer = player;
@@ -22,7 +24,7 @@ export class BallCarrier {
         if(player != null && this.initialPlayer == null) {
             this.initialPlayer = player;
             if(this.football != null) {
-                this.football.resetPosition(true);
+                this.football.resetPosition(common, true);
             }
         }
     }
@@ -52,5 +54,14 @@ export class BallCarrier {
         this.player = null;
         this.mostRecentPlayer = null;
         this.initialPlayer = null;
+    }
+
+    clone(): BallCarrier {
+        const carrier = new BallCarrier();
+        carrier.football = this.football;
+        carrier.player = this.player;
+        carrier.mostRecentPlayer = this.mostRecentPlayer;
+        carrier.initialPlayer = this.initialPlayer;
+        return carrier;
     }
 }

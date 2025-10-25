@@ -1,3 +1,4 @@
+import { ActorCommon } from "./canvas/actor-common";
 
 
 export class Clock {
@@ -6,7 +7,7 @@ export class Clock {
   private isRecording: boolean;
   private lastUpdateTime: number;
   private maxTime: number;
-  private onResetListeners: ((hardReset: boolean) => void)[] = [];
+  private onResetListeners: ((common: ActorCommon, hardReset: boolean) => void)[] = [];
 
   private setMaxTime: (maxTime: number) => void;
   private setCurrentTime: (currentTime: number ) => void;
@@ -59,15 +60,15 @@ export class Clock {
     return this.timeElapsed;
   }
 
-  reset(hardReset: boolean): void {
+  reset(common: ActorCommon, hardReset: boolean): void {
     this.timeElapsed = 0;
     this.setCurrentTime(this.timeElapsed);
     for(const listener of this.onResetListeners) {
-      listener(hardReset);
+      listener(common, hardReset);
     }
   }
   
-  setResetListener(listener: (hardReset: boolean) => void): void {
+  setResetListener(listener: (common: ActorCommon, hardReset: boolean) => void): void {
     this.onResetListeners.push(listener);
   } 
 
@@ -86,6 +87,19 @@ export class Clock {
 
   getIsRecording(): boolean {
     return this.isRecording;
+  }
+
+  clone(): Clock {
+    const clone = new Clock(this.setMaxTime, this.setCurrentTime);
+    clone.timeElapsed = this.timeElapsed;
+    clone.isActive = this.isActive;
+    clone.isRecording = this.isRecording;
+    clone.lastUpdateTime = this.lastUpdateTime;
+    clone.maxTime = this.maxTime;
+    clone.setCurrentTime = this.setCurrentTime;
+    clone.setMaxTime = this.setMaxTime;
+    clone.onResetListeners = this.onResetListeners.slice();
+    return clone;
   }
 
 }

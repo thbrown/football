@@ -25,6 +25,7 @@ export const Main = () => {
   const [, setMaxTime] = React.useState<number>(0);
   const [, setCurrentTime] = React.useState<number>(0);
   const [clock] = React.useState<Clock>(new Clock(setMaxTime, setCurrentTime));
+  const [actorCommon, setActorCommon] = React.useState<ActorCommon | null>(null);
 
   const resizeCanvasToDisplaySize = (canvas: HTMLCanvasElement) => {
     const displayWidth = canvas.clientWidth;
@@ -73,9 +74,9 @@ export const Main = () => {
         rapier: RAPIER,
         world,
         actorRegistry,
-        scene: scene,
         ballCarrier: ballCarrier,
       };
+      setActorCommon(common);
 
       console.log(world.timestep);
 
@@ -114,35 +115,6 @@ export const Main = () => {
       actorRegistry.addActor(clockActor);
       actorRegistry.addActor(mouse);
 
-      // Get step function (ActorCommon)
-      // rapier: RAPIER,
-      // world,
-      // actorRegistry,
-      // scene: scene,
-      // ballCarrier: ballCarrier,
-
-      // duplicateUniverse() ActorCommon
-      // getUniverseStepFunction();
-
-      /*
-      const stepFunction = (inputCtx: CanvasRenderingContext2D, inputCamera: Camera, inputPressedKeys: Set<string>) => {
-        const actors: Array<Actor> = actorRegistry.getActorListForDrawing();
-        for (let actor of actors) {
-          const handle = actor.getHandle();
-          const collider = world.getCollider(handle);
-          const collisionHandles: number[] = [];
-          world.intersectionPairsWith(collider, (otherHandle) => {
-            collisionHandles.push(otherHandle.handle);
-          });
-
-          actor.update(collisionHandles, inputPressedKeys);
-          world.step();
-          actor.draw(inputCtx, inputCamera);
-        }
-        inputPressedKeys.clear();
-      }
-        */
-
       const stepFunction = ActorCommon.getStepFunction(common);
       const animate = () => {
         stepFunction(ctx, camera, pressedKeys.current);
@@ -171,7 +143,7 @@ export const Main = () => {
         ref={canvasRef}
         style={{ width: "100%", height: "100%" }}
       ></canvas>
-      <Track clock={clock} scene={scene}></Track>
+      <Track clock={clock} scene={scene} common={actorCommon}></Track>
     </div>
   );
 };

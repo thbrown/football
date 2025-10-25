@@ -2,20 +2,22 @@ import { Button, Slider } from "@blueprintjs/core";
 import React from "react";
 import { Clock } from "../clock";
 import { MakePlay } from "../make-play";
+import { ActorCommon } from "../canvas/actor-common";
 
 interface Props {
     clock: Clock;
     scene: MakePlay;
+    common: ActorCommon | null;
 }
 
 type TrackState = "play" | "pause" | "repeat";
 
-export const Track: React.FC<Props> = ({clock, scene}) => {
+export const Track: React.FC<Props> = ({clock, common, scene}) => {
     const [trackState, setTrackState] = React.useState<TrackState>("pause");
 
     const togglePlay = () => {
         if(trackState === "repeat") {
-            clock.reset(false);
+            clock.reset(common, false);
             setTrackState("play");
             return;
         }
@@ -57,7 +59,9 @@ export const Track: React.FC<Props> = ({clock, scene}) => {
         if (trackState === "play") {
             animationFrameId = requestAnimationFrame(updateClock);
         } else {
-            cancelAnimationFrame(animationFrameId);
+            if(animationFrameId != null) {
+                cancelAnimationFrame(animationFrameId);
+            }
         }
 
         return () => cancelAnimationFrame(animationFrameId);

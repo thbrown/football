@@ -1,10 +1,3 @@
-import {
-  Collider,
-  EventQueue,
-  RigidBody,
-  RigidBodyDesc,
-  World,
-} from "@dimforge/rapier2d";
 import { Camera } from "./camera";
 import { Coordinate, Rapier } from "../utils/types";
 import { ActorCommon } from "./actor-common";
@@ -23,8 +16,6 @@ export class Player extends Actor {
   private y: number;
   private initialX: number;
   private initialY: number;
-  private rigidBody: RigidBody;
-  private common: ActorCommon;
   private selected: boolean;
   private targetPath: CoordinateRecorder;
   private travledPath: CoordinateRecorder;
@@ -52,19 +43,17 @@ export class Player extends Actor {
     const rigidBody = common.world.createRigidBody(rigidBodyDesc);
     const colliderDesc = common.rapier.ColliderDesc.ball(radius);
     const collider = common.world.createCollider(colliderDesc, rigidBody);
-    super(common, collider.handle);
+    super(common, rigidBody.handle, collider.handle);
 
-    this.common = common;
     this.x = x;
     this.y = y;
     this.initialX = x;
     this.initialY = y;
     this.radius = radius;
-    this.rigidBody = rigidBody;
     this.selected = true;
     this.clock = clock;
-    this.clock.setResetListener((hardReset) => {
-      this.resetPosition(hardReset);
+    this.clock.setResetListener((common, hardReset) => {
+      this.resetPosition(common, hardReset);
     });
     this.targetPath = new CoordinateRecorder({ x, y });
     this.travledPath = new CoordinateRecorder({ x, y });
@@ -85,14 +74,15 @@ export class Player extends Actor {
     this.targetPath = new CoordinateRecorder({ x: this.initialX, y: this.initialY });
   }
 
-  resetPosition(hardReset: boolean): void {
+  resetPosition(common: ActorCommon, hardReset: boolean): void {
     this.x = this.initialX;
     this.y = this.initialY;
-    this.rigidBody.setTranslation(
+    const rigidBody = common.world.getRigidBody(this.getRigidBodyHandle());
+    rigidBody.setTranslation(
       { x: this.initialX, y: this.initialY },
       true
     );
-    this.rigidBody.setLinvel({ x: 0, y: 0 }, true);
+    rigidBody.setLinvel({ x: 0, y: 0 }, true);
     if (hardReset) {
       this.travledPath = new CoordinateRecorder({ x: this.initialX, y: this.initialY });
     }
@@ -103,7 +93,7 @@ export class Player extends Actor {
     this.isMoved = true;
   }
 
-  draw(ctx: CanvasRenderingContext2D, camera: Camera): void {
+  draw(common: ActorCommon, ctx: CanvasRenderingContext2D, camera: Camera): void {
     // Draw paths first (so the player circle appears on top of them)
     /*
     if (this.targetPath != null) {
@@ -166,19 +156,20 @@ export class Player extends Actor {
     
   }
 
-  update(collisions: number[]): void {
+  update(common: ActorCommon, collisions: number[]): void {
     // Check if the player is selected (colliding mouse pointer)
     this.selected = false;
     for (let collision of collisions) {
-      const target = this.common.actorRegistry.getActor(collision);
+      const target = common.actorRegistry.getActorByColliderHandle(collision);
       if (target instanceof Mouse) {
         this.selected = true;
       }
     }
 
+    const rigidBody = common.world.getRigidBody(this.getRigidBodyHandle());
     if (this.clock.getClock().getIsRecording()) {
       // Update draw location based on the physics engine
-      const position = this.rigidBody.translation();
+      const position = rigidBody.translation();
       this.x = position.x;
       this.y = position.y;
 
@@ -194,16 +185,16 @@ export class Player extends Actor {
         ) ?? { x: this.initialX, y: this.initialY };
 
         const newLinearVelocity = this.calcLinearVelocity(
-          this.rigidBody.translation(),
+          rigidBody.translation(),
           targetPosition,
-          this.rigidBody.linvel()
+          rigidBody.linvel()
         );
 
         // Deadzone, so we don't get jiggling players at the end of the route
-        if (getDist(this.rigidBody.translation(), targetPosition) < 0.1) {
-          this.rigidBody.setLinvel({ x: 0, y: 0 }, true);
+        if (getDist(rigidBody.translation(), targetPosition) < 0.1) {
+          rigidBody.setLinvel({ x: 0, y: 0 }, true);
         } else {
-          this.rigidBody.setLinvel({x: newLinearVelocity.x/MAGIC_VELOCITY_CONSTANT, y: newLinearVelocity.y/MAGIC_VELOCITY_CONSTANT}, true);
+          rigidBody.setLinvel({x: newLinearVelocity.x/MAGIC_VELOCITY_CONSTANT, y: newLinearVelocity.y/MAGIC_VELOCITY_CONSTANT}, true);
         }
       }
     } else {
@@ -211,11 +202,38 @@ export class Player extends Actor {
       this.x = position.x;
       this.y = position.y;
       // We need to move the ridgid body too because we rely on it's position for collision detection
-      this.rigidBody.setTranslation(
+      rigidBody.setTranslation(
         { x: this.x, y: this.y },
         true
       );
     }
+  }
+
+  clone(registry: ActorRegistry, common: ActorCommon): Player {
+    const clocks = registry.getActorsByType(ClockActor.name);
+    const clonedPlayer = new Player({
+      common,
+      clock: clocks[0] as ClockActor,
+      x: this.x,
+      y: this.y,
+      radius: this.radius,
+    });
+
+    clonedPlayer.x = this.x;
+    clonedPlayer.y = this.y;
+    clonedPlayer.initialX = this.initialX;
+    clonedPlayer.initialY = this.initialY;
+    clonedPlayer.radius = this.radius;
+    clonedPlayer.selected = this.selected;
+    clonedPlayer.clock = clocks[0] as ClockActor;
+    // TODO: is this right???
+    clonedPlayer.clock.setResetListener((common, hardReset) => {
+      clonedPlayer.resetPosition(common, hardReset);
+    });
+    clonedPlayer.targetPath = this.targetPath.clone();
+    clonedPlayer.travledPath = this.travledPath.clone();
+    clonedPlayer.playerNumber = this.playerNumber;
+    return clonedPlayer;
   }
 
   getX(): number {

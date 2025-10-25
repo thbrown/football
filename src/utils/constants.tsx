@@ -21,5 +21,5 @@ export const PLAYER_RADIUS = 2;
 // Football attributes
 export const FOOTBALL_WIDTH = 0.9375;
 export const FOOTBALL_HEIGHT = 1.25;
-export const FOOTBALL_SPEED = 44; //44/MYSTERY_CONSTANT_TO_GET_VALUES_TO_FEET; // 30mph
+export const FOOTBALL_SPEED = 44; // 30mph
 
