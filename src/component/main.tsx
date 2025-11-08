@@ -137,8 +137,7 @@ export const Main = () => {
   }, []);
 
   return (
-    <div>
-      <h1>Football</h1>
+    <div className="main-wrapper">
       <canvas
         ref={canvasRef}
         style={{ width: "100%", height: "100%" }}

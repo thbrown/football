@@ -70,7 +70,7 @@ export const Track: React.FC<Props> = ({clock, common, scene}) => {
     const maxTime = clock.getMaxTime();
     
     return (
-        <div className="track-wrapper" style={{backgroundColor: clock.getIsRecording() ? "red" : "green"}}>
+        <div className="track-wrapper" style={{backgroundColor: clock.getIsRecording() ? "red" : "grey"}}>
             <Button className="track-button" icon={getTrackIcon(trackState)} onClick={togglePlay} disabled={clock.getMaxTime() <= 0}></Button>
             {/*<Button className="track-button" icon="record" onClick={() => {console.log("PRESS")}} disabled={clock.getIsActive()}></Button>*/}
             <Slider className="track-slider" showTrackFill={true} labelStepSize={1} stepSize={.01} value={clock.getElapsedTime()/1000} onChange={(v) => {setTrackState("pause"); clock.gotoTime(v*1000)}} min={0} max={maxTime/1000} disabled={clock.getMaxTime() <= 0}/>

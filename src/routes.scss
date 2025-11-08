@@ -13,11 +13,15 @@ canvas {
   border: 1px solid black;
 }
 
+.main-wrapper {
+  height: calc(100vh - 56px); // 56px is height of slider bar
+}
+
 .track-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 8px;
+  padding: 8px;
 }
 
 .track-button {
