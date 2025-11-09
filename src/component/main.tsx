@@ -11,10 +11,10 @@ import { Track } from "./track";
 import { Clock } from "../clock";
 import { MakePlay } from "../make-play";
 import { ActorRegistry } from "../canvas/actor-registry";
-import { Kinematics } from "../utils/kinematics";
 import { BallCarrier } from "../canvas/ball-carrier";
 import { Football } from "../canvas/football";
 import { ActorCommon } from "../canvas/actor-common";
+import { Spinner } from "@blueprintjs/core";
 
 const camera = new Camera();
 const scene = new MakePlay();
@@ -35,7 +35,6 @@ export const Main = () => {
       canvas.width !== displayWidth || canvas.height !== displayHeight;
 
     if (needResize) {
-      console.log("RESIZE");
       canvas.width = displayWidth;
       canvas.height = displayHeight;
       camera.setCanvasDimensions(displayWidth, displayHeight);
@@ -46,7 +45,7 @@ export const Main = () => {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  
+
   // Key Listeners
   const pressedKeys = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -59,7 +58,7 @@ export const Main = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-    
+
   }, []);
 
   useEffect(() => {
@@ -136,13 +135,20 @@ export const Main = () => {
     };
   }, []);
 
+  console.log("ActorCommon", actorCommon, scene, clock);
   return (
-    <div className="main-wrapper">
+    <div className="main-wrapper" style={{ position: "relative" }}>
       <canvas
         ref={canvasRef}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", position: actorCommon == null ? "absolute" : undefined }}
       ></canvas>
-      <Track clock={clock} scene={scene} common={actorCommon}></Track>
+      {actorCommon == null ? <div className="load-wrapper" style={{ position: "absolute" }}
+      >
+        <div className="load-text">Loading physics...</div>
+        <Spinner />
+      </div>
+      :
+      <Track clock={clock} scene={scene} common={actorCommon}></Track>}
     </div>
   );
 };

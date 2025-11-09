@@ -7,7 +7,7 @@ import { ActorCommon } from "../canvas/actor-common";
 interface Props {
     clock: Clock;
     scene: MakePlay;
-    common: ActorCommon | null;
+    common: ActorCommon;
 }
 
 type TrackState = "play" | "pause" | "repeat";
@@ -37,8 +37,14 @@ export const Track: React.FC<Props> = ({clock, common, scene}) => {
         }
     };
 
+    const maybeCancelAnimationFrame = React.useCallback((animationFrameId) => {
+        if(animationFrameId != null) {
+            cancelAnimationFrame(animationFrameId);
+        }
+    }, []);
+
     React.useEffect(() => {
-        let animationFrameId: number;
+        let animationFrameId: number | null = null;
         let lastTime = performance.now();
 
         const updateClock = (currentTime: number) => {
@@ -59,12 +65,12 @@ export const Track: React.FC<Props> = ({clock, common, scene}) => {
         if (trackState === "play") {
             animationFrameId = requestAnimationFrame(updateClock);
         } else {
-            if(animationFrameId != null) {
-                cancelAnimationFrame(animationFrameId);
-            }
+            maybeCancelAnimationFrame(animationFrameId)
         }
 
-        return () => cancelAnimationFrame(animationFrameId);
+        return () => { 
+            maybeCancelAnimationFrame(animationFrameId);
+        }
     }, [trackState, clock]);
 
     const maxTime = clock.getMaxTime();

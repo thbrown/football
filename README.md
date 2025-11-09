@@ -6,6 +6,8 @@ Football play simulator
 
 npm run serve (to /dev)
 
+node: the dev server needs to be re-started to pick up new css changes
+
 ## Build
 
 npm run build (to /docs) npm run build-dev (to /docs)
