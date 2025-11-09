@@ -2,6 +2,8 @@
 
 Football play simulator
 
+Live: https://thbrown.github.io/football/
+
 ## Develop
 
 npm run serve (to /dev)
