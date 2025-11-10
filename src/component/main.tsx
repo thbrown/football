@@ -135,20 +135,21 @@ export const Main = () => {
     };
   }, []);
 
-  console.log("ActorCommon", actorCommon, scene, clock);
+  // The canvas needs to appear in the DOM while loading Rapier, but we also want to show a loading screen.
   return (
     <div className="main-wrapper" style={{ position: "relative" }}>
       <canvas
         ref={canvasRef}
         style={{ width: "100%", height: "100%", position: actorCommon == null ? "absolute" : undefined }}
       ></canvas>
-      {actorCommon == null ? <div className="load-wrapper" style={{ position: "absolute" }}
-      >
-        <div className="load-text">Loading physics...</div>
-        <Spinner />
-      </div>
-      :
-      <Track clock={clock} scene={scene} common={actorCommon}></Track>}
+      {actorCommon == null ?
+        <div className="load-wrapper" style={{ position: "absolute" }}>
+          <div className="load-text">Loading physics...</div>
+          <Spinner />
+        </div>
+        :
+        <Track clock={clock} scene={scene} common={actorCommon}></Track>
+      }
     </div>
   );
 };

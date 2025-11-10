@@ -23,3 +23,7 @@ export const FOOTBALL_WIDTH = 0.9375;
 export const FOOTBALL_HEIGHT = 1.25;
 export const FOOTBALL_SPEED = 44; // 30mph
 
+// Mouse buttons
+export const RIGHT_CLICK = 2;
+export const LEFT_CLICK = 0;
+

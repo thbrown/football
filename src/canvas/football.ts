@@ -192,7 +192,7 @@ export class Football extends Actor {
       if (!this.travledPath.isRecording()) {
         this.travledPath.startRecording(this.clock.getClock());
       }
-      this.travledPath.setPoint({ x: this.x, y: this.y });
+      this.travledPath.recordPoint({ x: this.x, y: this.y });
     } else {
       const position = this.travledPath.getCoordAtTime(this.clock.getElapsedTime());
       this.x = position.x;

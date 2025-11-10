@@ -23,7 +23,7 @@ class CoordinateRecorder {
     return this.clock != null;
   }
 
-  setPoint(coord: Coordinate): void {
+  recordPoint(coord: Coordinate): void {
     if (this.clock == null) {
       throw new Error("Recording has not started. Call startRecording first.");
     }

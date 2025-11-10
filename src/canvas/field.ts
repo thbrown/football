@@ -121,7 +121,7 @@ export class Field extends Actor {
     }
   }
 
-  update(common: ActorCommon, collisions: number[]): void {}
+  update(_common: ActorCommon, _collisions: number[]): void {}
 
   clone(_registry: ActorRegistry, common: ActorCommon): Field {
     const clonedFiled = new Field({

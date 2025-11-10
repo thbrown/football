@@ -5,7 +5,7 @@ import { Actor } from "./actor";
 import { Player } from "./player";
 import { ClockActor } from "./clock-actor";
 import CoordinateRecorder from "./coordinate-recorder";
-import { PLAYER_RADIUS } from "../utils/constants";
+import { LEFT_CLICK, PLAYER_RADIUS, RIGHT_CLICK } from "../utils/constants";
 import { Football } from "./football";
 
 export class Mouse extends Actor {
@@ -92,7 +92,7 @@ export class Mouse extends Actor {
 
   update(common: ActorCommon, collisions: number[]): void {
     if(this.mouseDown != null) {
-      if(this.mouseDown.button === 2) {
+      if(this.mouseDown.button === RIGHT_CLICK) {
         console.log("Right-click down detected");
         if(this.hoveredActor instanceof Player) {
           this.hoveredActor.deleteDescendants();
@@ -100,7 +100,7 @@ export class Mouse extends Actor {
           // Remove footbal for player 0 too
         }
         this.clock.reset(common, true);
-      } else if(this.mouseDown.button === 0) {
+      } else if(this.mouseDown.button === LEFT_CLICK) {
         console.log("Left-click down detected");
         const event = this.mouseDown;
         const rect = this.canvas.getBoundingClientRect();
@@ -174,7 +174,7 @@ export class Mouse extends Actor {
       const worldCoords = this.camera.toWorldCoord(canvasX, canvasY);
       this.bufferTranslation = worldCoords;
       if (this.draggedMouseCoordinates != null) {
-        this.draggedMouseCoordinates.setPoint(worldCoords);
+        this.draggedMouseCoordinates.recordPoint(worldCoords);
       }
       if (this.draggedActor instanceof Player) {
         this.draggedActor.setTargetPath(this.draggedMouseCoordinates);

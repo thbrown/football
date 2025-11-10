@@ -176,7 +176,7 @@ export class Player extends Actor {
       if (!this.travledPath.isRecording()) {
         this.travledPath.startRecording(this.clock.getClock());
       }
-      this.travledPath.setPoint({ x: this.x, y: this.y });
+      this.travledPath.recordPoint({ x: this.x, y: this.y });
 
       // Set the velocity of the player to move towards the target
       if (this.targetPath != null && this.clock.getElapsedTime() > 0) {
