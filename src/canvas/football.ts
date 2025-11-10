@@ -9,12 +9,13 @@ import { FOOTBALL_HEIGHT, FOOTBALL_SPEED, FOOTBALL_WIDTH, PLAYER_ACCELERATION, P
 import { Player } from "./player";
 import { ActorCommon } from "./actor-common";
 import { ActorRegistry } from "./actor-registry";
+import { Clock } from "../clock";
 
 export class Football extends Actor {
   private x: number;
   private y: number;
   private height: number;
-  private clock: ClockActor;
+  private clock: Clock;
   private throwStartTimestamp: number;
   private verticalVelocity: number;
   private travledPath: CoordinateRecorder;
@@ -26,7 +27,7 @@ export class Football extends Actor {
     y,
   }: {
     common: ActorCommon;
-    clock: ClockActor;
+    clock: Clock;
     x: number;
     y: number;
   }) {
@@ -124,7 +125,7 @@ export class Football extends Actor {
   update(common: ActorCommon, collisions: number[], pressedKeys: Set<String>): void {
     // The code here implies that the football is throwing itself, but it would be more representitive (and therefore more extensible) if the player throws the football
     const rigidBody = common.world.getRigidBody(this.getRigidBodyHandle());
-    if (this.clock.getClock().getIsRecording()) {
+    if (this.clock.getIsRecording()) {
       for (let collision of collisions) {
         if (common.ballCarrier.getPlayer() != null) {
           break;
@@ -168,7 +169,7 @@ export class Football extends Actor {
               y: horizontalVelocity * Math.sin(angle) / MAGIC_VELOCITY_CONSTANT
             }, true);
             common.ballCarrier.setCarrier(common, null);
-            this.throwStartTimestamp = this.clock.getClock().getElapsedTime();
+            this.throwStartTimestamp = this.clock.getElapsedTime();
             return;
           }
         });
@@ -177,7 +178,7 @@ export class Football extends Actor {
       if (common.ballCarrier.getPlayer() == null) {
         this.x = rigidBody.translation().x;
         this.y = rigidBody.translation().y;
-        const msSinceBallWasThrown = this.clock.getClock().getElapsedTime() - this.throwStartTimestamp;
+        const msSinceBallWasThrown = this.clock.getElapsedTime() - this.throwStartTimestamp;
         this.height = Math.max(Kinematics.calcHeight(0, this.verticalVelocity, msSinceBallWasThrown / 1000), 0);
       } else {
         this.x = common.ballCarrier.getPlayer().getX();
@@ -190,7 +191,7 @@ export class Football extends Actor {
       }
 
       if (!this.travledPath.isRecording()) {
-        this.travledPath.startRecording(this.clock.getClock());
+        this.travledPath.startRecording(this.clock);
       }
       this.travledPath.recordPoint({ x: this.x, y: this.y });
     } else {
@@ -207,7 +208,7 @@ export class Football extends Actor {
   clone(registry: ActorRegistry, common: ActorCommon): Football {
     // Assume we are copying a world with one clock actor
     const clocks = registry.getActorsByType(ClockActor.name);
-    const clone = new Football({clock: clocks[0] as ClockActor, common, x: this.x, y: this.y});
+    const clone = new Football({clock: (clocks[0] as ClockActor).getClock(), common, x: this.x, y: this.y});
     clone.height = this.height;
     clone.throwStartTimestamp = this.throwStartTimestamp;
     clone.verticalVelocity = this.verticalVelocity;

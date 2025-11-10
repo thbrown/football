@@ -9,6 +9,7 @@ import { Kinematics } from "../utils/kinematics";
 import { MAGIC_VELOCITY_CONSTANT, PLAYER_ACCELERATION, PLAYER_DECELERATION, PLAYER_MAX_SPEED } from "../utils/constants";
 import { getDist } from "../utils/generic-utils";
 import { ActorRegistry } from "./actor-registry";
+import { Clock } from "../clock";
 
 export class Player extends Actor {
   private radius: number;
@@ -19,7 +20,7 @@ export class Player extends Actor {
   private selected: boolean;
   private targetPath: CoordinateRecorder;
   private travledPath: CoordinateRecorder;
-  private clock: ClockActor;
+  private clock: Clock;
   private playerNumber: string;
   private isMoved: boolean = false;
 
@@ -31,7 +32,7 @@ export class Player extends Actor {
     radius,
   }: {
     common: ActorCommon;
-    clock: ClockActor;
+    clock: Clock;
     x: number;
     y: number;
     radius: number;
@@ -167,14 +168,14 @@ export class Player extends Actor {
     }
 
     const rigidBody = common.world.getRigidBody(this.getRigidBodyHandle());
-    if (this.clock.getClock().getIsRecording()) {
+    if (this.clock.getIsRecording()) {
       // Update draw location based on the physics engine
       const position = rigidBody.translation();
       this.x = position.x;
       this.y = position.y;
 
       if (!this.travledPath.isRecording()) {
-        this.travledPath.startRecording(this.clock.getClock());
+        this.travledPath.startRecording(this.clock);
       }
       this.travledPath.recordPoint({ x: this.x, y: this.y });
 
@@ -213,7 +214,7 @@ export class Player extends Actor {
     const clocks = registry.getActorsByType(ClockActor.name);
     const clonedPlayer = new Player({
       common,
-      clock: clocks[0] as ClockActor,
+      clock: (clocks[0] as ClockActor).getClock(),
       x: this.x,
       y: this.y,
       radius: this.radius,
@@ -225,7 +226,7 @@ export class Player extends Actor {
     clonedPlayer.initialY = this.initialY;
     clonedPlayer.radius = this.radius;
     clonedPlayer.selected = this.selected;
-    clonedPlayer.clock = clocks[0] as ClockActor;
+    clonedPlayer.clock = (clocks[0] as ClockActor).getClock();
     // TODO: is this right???
     clonedPlayer.clock.setResetListener((common, hardReset) => {
       clonedPlayer.resetPosition(common, hardReset);

@@ -7,13 +7,14 @@ import { ClockActor } from "./clock-actor";
 import CoordinateRecorder from "./coordinate-recorder";
 import { LEFT_CLICK, PLAYER_RADIUS, RIGHT_CLICK } from "../utils/constants";
 import { Football } from "./football";
+import { Clock } from "../clock";
 
 export class Mouse extends Actor {
   private radius: number;
   private x: number;
   private y: number;
   private bufferTranslation: { x: number; y: number };
-  private clock: ClockActor;
+  private clock: Clock;
   private canvas: HTMLCanvasElement;
   private camera: Camera;
 
@@ -36,7 +37,7 @@ export class Mouse extends Actor {
     camera: Camera;
     canvas: HTMLCanvasElement;
     radius: number;
-    clock: ClockActor;
+    clock: Clock;
   }) {
     const colliderDesc =
       common.rapier.ColliderDesc.ball(radius).setSensor(true);
@@ -128,7 +129,7 @@ export class Mouse extends Actor {
           this.draggedMouseCoordinates = new CoordinateRecorder({x: startX, y: startY});
   
           // Not sure if using these coords matters in practice or not but we can fix this if players are starting at the wrong spots
-          this.draggedMouseCoordinates.startRecording(this.clock.getClock());
+          this.draggedMouseCoordinates.startRecording(this.clock);
           //this.common.scene.setReplayState("record");
           this.draggedActor = this.hoveredActor;
   

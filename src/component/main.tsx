@@ -98,11 +98,11 @@ export const Main = () => {
         camera,
         canvas: canvas,
         radius: 0.25,
-        clock: clockActor,
+        clock,
       });
       const football = new Football({
         common: common,
-        clock: clockActor,
+        clock,
         x: 0,
         y: 0,
       });
